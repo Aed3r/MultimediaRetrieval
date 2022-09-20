@@ -1,6 +1,7 @@
 #include <igl/opengl/glfw/Viewer.h>
+//#include <igl\readPLY.h>
 #include <iostream>
-using namespace std;
+
 
 void load_off_builtin(igl::opengl::glfw::Viewer &viewer, const std::string &filename)
 {
@@ -22,7 +23,7 @@ void load_off(igl::opengl::glfw::Viewer &viewer, const std::string &filename)
     std::ifstream file(filename);
     std::string line;
     bool read_counts = false, read_vertices = false;
-    int lineCount = 0, num_vertices, num_faces, num_edges, vertexCount = 0, faceCount = 0;
+    int lineCount = 0, num_vertices, num_faces, vertexCount = 0, faceCount = 0;
     
     // Get lines until none left
     while (std::getline(file, line))
@@ -39,11 +40,7 @@ void load_off(igl::opengl::glfw::Viewer &viewer, const std::string &filename)
         if (tokens.size() == 3)
         {
             if (!read_counts) {
-                // Read counts
-                num_vertices = std::stoi(tokens[0]);
-                num_faces = std::stoi(tokens[1]);
-                num_edges = std::stoi(tokens[2]);
-
+                iss >> num_vertices >> num_faces;
                 V.resize(num_vertices, 3);
                 F.resize(num_faces, 3);
                 read_counts = true;
@@ -122,14 +119,39 @@ void make_cube(igl::opengl::glfw::Viewer &viewer)
     viewer.data().set_face_based(true);
 }
 
+
+
+
+
+/*
+to load .ply files
+*/
+void load_PLY_builtin(igl::opengl::glfw::Viewer& viewer, const std::string& filename)
+{
+
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    //Eigen::MatrixXd V, C, UV;
+    igl::readPLY(filename, V, F);
+    //igl::readPLY(filename, V, F, C, UV);
+
+
+
+    // Plot the mesh
+    viewer.data().set_mesh(V, F);
+    viewer.data().set_face_based(true);
+    viewer.core().align_camera_center(V, F);
+
+}
+
 int main(int argc, char *argv[])
 {
     igl::opengl::glfw::Viewer viewer;
 
-    cout << "Loading mesh from OFF file" << endl;
     //make_cube(viewer);
     //load_off_builtin(viewer, "61.off");
-    load_off(viewer, "61.off");
-
+    load_PLY_builtin(viewer, "Garuda and Vishnu.ply");
     viewer.launch();
+
 }
+
