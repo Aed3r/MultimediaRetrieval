@@ -31,4 +31,4 @@
 *.swo
 *.swp
 
-mesh_loader/build/*
+build/*
