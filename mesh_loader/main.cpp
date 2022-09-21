@@ -1,4 +1,6 @@
 #include <igl/opengl/glfw/Viewer.h>
+#include <iostream>
+using namespace std;
 
 void load_off_builtin(igl::opengl::glfw::Viewer &viewer, const std::string &filename)
 {
@@ -23,32 +25,35 @@ void load_ply_builtin(igl::opengl::glfw::Viewer& viewer, const std::string& file
 /*
  * Load a mesh from a OFF file using following specification: https://en.wikipedia.org/wiki/OFF_(file_format)
  */
-/*
-void load_off(igl::opengl::glfw::Viewer &viewer, const std::string &filename)
+void load_off(igl::opengl::glfw::Viewer& viewer, const std::string& filename)
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     std::ifstream file(filename);
     std::string line;
     bool read_counts = false, read_vertices = false;
-    int lineCount = 0, num_vertices, num_faces, vertexCount = 0, faceCount = 0;
-    
+    int lineCount = 0, num_vertices, num_faces, num_edges, vertexCount = 0, faceCount = 0;
+
     // Get lines until none left
     while (std::getline(file, line))
     {
         // Skip comments, empty lines and the optional 'OFF' header
         if (line[0] == '#' || line.empty() || (lineCount == 0 && line == "OFF"))
             continue;
-        
+
         // Separate line into tokens
         std::istringstream iss(line);
-        std::vector<std::string> tokens{std::istream_iterator<std::string>{iss},
-                                        std::istream_iterator<std::string>{}};
+        std::vector<std::string> tokens{ std::istream_iterator<std::string>{iss},
+                                        std::istream_iterator<std::string>{} };
 
         if (tokens.size() == 3)
         {
             if (!read_counts) {
-                iss >> num_vertices >> num_faces;
+                // Read counts
+                num_vertices = std::stoi(tokens[0]);
+                num_faces = std::stoi(tokens[1]);
+                num_edges = std::stoi(tokens[2]);
+
                 V.resize(num_vertices, 3);
                 F.resize(num_faces, 3);
                 read_counts = true;
@@ -60,7 +65,7 @@ void load_off(igl::opengl::glfw::Viewer &viewer, const std::string &filename)
 
             if (vertexCount >= num_vertices)
                 throw std::runtime_error("More vertices in file than expected!");
-            
+
             // Read vertex coordinates
             V(vertexCount, 0) = std::stod(tokens[0]);
             V(vertexCount, 1) = std::stod(tokens[1]);
@@ -79,7 +84,7 @@ void load_off(igl::opengl::glfw::Viewer &viewer, const std::string &filename)
 
             if (!read_counts)
                 throw std::runtime_error("File line counts missing!");
-            
+
             // Read face indices
             F(faceCount, 0) = std::stoi(tokens[1]);
             F(faceCount, 1) = std::stoi(tokens[2]);
@@ -96,7 +101,7 @@ void load_off(igl::opengl::glfw::Viewer &viewer, const std::string &filename)
     viewer.core().align_camera_center(V, F);
 }
 
-void make_cube(igl::opengl::glfw::Viewer &viewer)
+void make_cube(igl::opengl::glfw::Viewer& viewer)
 {
     // Inline mesh of a cube
     const Eigen::MatrixXd V = (Eigen::MatrixXd(8, 3) << 0.0, 0.0, 0.0,
@@ -126,15 +131,18 @@ void make_cube(igl::opengl::glfw::Viewer &viewer)
     viewer.data().set_mesh(V, F);
     viewer.data().set_face_based(true);
 }
-*/
+
 
 int main(int argc, char *argv[])
 {
     igl::opengl::glfw::Viewer viewer;
 
+
+    cout << "Loading mesh from OFF file" << endl;
+    load_off(viewer, "61.off");
     //make_cube(viewer);
-    //load_off_builtin(viewer, "241.off");
-    load_ply_builtin(viewer, "m0.ply");
+    //load_off_builtin(viewer, "61.off");
+    //load_ply_builtin(viewer, "m0.ply");
 
     viewer.launch();
 }
