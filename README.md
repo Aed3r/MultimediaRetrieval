@@ -1,46 +1,25 @@
-# libigl example project
+# Multimedia Retrieval Assignment
 
-A blank project example showing how to use libigl and cmake. Feel free and
-encouraged to copy or fork this project as a way of starting a new personal
-project using libigl.
+## Installation & Setup
+ - Run `wsl --install` in a terminal to install WSL 2
+ - Install Docker: https://www.docker.com/products/docker-desktop/
+ - Install vscode: https://code.visualstudio.com/
+ - Install the Remote Development extension: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack
+ - Install VcXsrv Windows X Server: https://sourceforge.net/projects/vcxsrv/files/latest/download
+ - Inside vscode, hit F1 and run the command `Remote-Containers: Open Folder in Container..` and select the "MultimediaRetrieval" folder in the selection screen
+ - The container should start up, click on the message in the bottom left corner to see the progression and potential errors
+ - In the meantime, run XLaunch, select "One large window", and go through all steps by leaving everything default
+ - A big black window should appear, you can reduce its size
+ - When the container is done building in vscode, open a terminal if there isn't one open already: 'Terminal' > 'New Terminal' at the top of the screen
+ - Run following command: `mkdir -p build; cd build`
+ - To generate the project do: `cmake ..`
+ - To build the project do: `make`
+ - To run the project do: `./main`
+ - If everything worked correctly, the XLaunch window should show the libigl program
+ - After any changes to the files re-run `make` to see the changes. After any project structure changes (e.g. new files), re-run `cmake ..`
+ - Git should work as expected in the container, and all vscode extensions copy over. Here are a few convenient ones for C++ development:
+    - https://marketplace.visualstudio.com/items?itemName=jeff-hykin.better-cpp-syntax
+    - https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools
+    - https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools-extension-pack
+    - https://marketplace.visualstudio.com/items?itemName=tonybaloney.vscode-pets
 
-## See the tutorial first
-
-Then build, run and understand the [libigl
-tutorial](http://libigl.github.io/libigl/tutorial/).
-
-## Dependencies
-
-The only dependencies are STL, Eigen, [libigl](http://libigl.github.io/libigl/) and the dependencies
-of the `igl::opengl::glfw::Viewer` (OpenGL, glad and GLFW).
-The CMake build system will automatically download libigl and its dependencies using
-[CMake FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html),
-thus requiring no setup on your part.
-
-To use a local copy of libigl rather than downloading the repository via FetchContent, you can use
-the CMake cache variable `FETCHCONTENT_SOURCE_DIR_LIBIGL` when configuring your CMake project for
-the first time:
-```
-cmake -DFETCHCONTENT_SOURCE_DIR_LIBIGL=<path-to-libigl> ..
-```
-When changing this value, do not forget to clear your `CMakeCache.txt`, or to update the cache variable
-via `cmake-gui` or `ccmake`.
-
-## Compile
-
-Compile this project using the standard cmake routine:
-
-    mkdir build
-    cd build
-    cmake ..
-    make
-
-This should find and build the dependencies and create a `example_bin` binary.
-
-## Run
-
-From within the `build` directory just issue:
-
-    ./example
-
-A glfw app should launch displaying a 3D cube.

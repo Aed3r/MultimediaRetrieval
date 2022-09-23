@@ -126,10 +126,9 @@ int main(int argc, char *argv[])
 {
     igl::opengl::glfw::Viewer viewer;
 
-    cout << "Loading mesh from OFF file" << endl;
-    //make_cube(viewer);
+    make_cube(viewer);
     //load_off_builtin(viewer, "61.off");
-    load_off(viewer, "61.off");
+    //load_off(viewer, "61.off");
 
     viewer.launch();
 }
