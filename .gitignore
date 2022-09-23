@@ -32,3 +32,4 @@
 *.swp
 
 build/*
+mesh_loader/build/*
