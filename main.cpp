@@ -2,25 +2,23 @@
 //#include <igl\readPLY.h>
 #include <iostream>
 #include <string>
+#include <fstream>
+#include <iostream>
+#include <filesystem>
 using namespace std;
+namespace fs = std::filesystem;
 
-void load_off_builtin(igl::opengl::glfw::Viewer &viewer, const std::string &filename)
-{
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    igl::readOFF(filename, V, F);
-    viewer.data().set_mesh(V, F);
-    viewer.data().set_face_based(true);
-    viewer.core().align_camera_center(V, F);
-}
+#define LABELEDPSB_LOCATION "../data/LabeledDB_new"
+#define PRINCETON_LOCATION "../data/psb_v1/benchmark"
+
+enum Facetypes { triangles, quads, mixed };
+
 
 /*
  * Load a mesh from a OFF file using following specification: https://en.wikipedia.org/wiki/OFF_(file_format)
  */
-void load_off(igl::opengl::glfw::Viewer &viewer, const std::string &filename)
+void load_off(const std::string &filename, Eigen::Ref<Eigen::MatrixXd> V, Eigen::Ref<Eigen::MatrixXi> F, Facetypes type)
 {
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
     std::ifstream file(filename);
     std::string line;
     bool read_counts = false, read_vertices = false;
@@ -77,20 +75,27 @@ void load_off(igl::opengl::glfw::Viewer &viewer, const std::string &filename)
             if (!read_counts)
                 throw std::runtime_error("File line counts missing!");
             
-            // Read face indices
-            F(faceCount, 0) = std::stoi(tokens[1]);
-            F(faceCount, 1) = std::stoi(tokens[2]);
-            F(faceCount, 2) = std::stoi(tokens[3]);
+            if (std::stoi(tokens[0]) == 3) {
+                // Read triangle
+                F(faceCount, 0) = std::stoi(tokens[1]);
+                F(faceCount, 1) = std::stoi(tokens[2]);
+                F(faceCount, 2) = std::stoi(tokens[3]);
+            } else if (std::stoi(tokens[0]) == 4) {
+                // Read quads
+                F(faceCount, 0) = std::stoi(tokens[1]);
+                F(faceCount, 1) = std::stoi(tokens[2]);
+                F(faceCount, 2) = std::stoi(tokens[3]);
+                F(faceCount, 3) = std::stoi(tokens[4]);
+            } else {
+                throw std::runtime_error("Unsupported face type!");
+            }
+            
             faceCount++;
             continue;
         }
 
         throw std::runtime_error("Unexpected line in file!");
     }
-
-    viewer.data().set_mesh(V, F);
-    viewer.data().set_face_based(true);
-    viewer.core().align_camera_center(V, F);
 }
 
 
@@ -100,10 +105,8 @@ void load_off(igl::opengl::glfw::Viewer &viewer, const std::string &filename)
 /*
  * Load a mesh from a PLY file using following specification: https://en.wikipedia.org/wiki/PLY_(file_format)#:~:text=PLY%20is%20a%20computer%20file,list%20of%20nominally%20flat%20polygons.
  */
-void load_PLY(igl::opengl::glfw::Viewer& viewer, const std::string& filename)
+void load_PLY(const std::string& filename, Eigen::Ref<Eigen::MatrixXd> V, Eigen::Ref<Eigen::MatrixXi> F, Facetypes type)
 {
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
     std::ifstream file(filename);
     std::string line;
     bool read_counts = false, read_vertices = false;
@@ -179,23 +182,27 @@ void load_PLY(igl::opengl::glfw::Viewer& viewer, const std::string& filename)
             if (!read_counts)
                 throw std::runtime_error("File line counts missing!");
             
-            // Read face indices
-            F(faceCount, 0) = std::stoi(tokens[1]);
-            F(faceCount, 1) = std::stoi(tokens[2]);
-            F(faceCount, 2) = std::stoi(tokens[3]);
+            if (std::stoi(tokens[0]) == 3) {
+                // Read triangle
+                F(faceCount, 0) = std::stoi(tokens[1]);
+                F(faceCount, 1) = std::stoi(tokens[2]);
+                F(faceCount, 2) = std::stoi(tokens[3]);
+            } else if (std::stoi(tokens[0]) == 4) {
+                // Read quads
+                F(faceCount, 0) = std::stoi(tokens[1]);
+                F(faceCount, 1) = std::stoi(tokens[2]);
+                F(faceCount, 2) = std::stoi(tokens[3]);
+                F(faceCount, 3) = std::stoi(tokens[4]);
+            } else {
+                throw std::runtime_error("Unsupported face type!");
+            }
+
             faceCount++;
             continue;
         }
 
         throw std::runtime_error("Unexpected line in file!");
-
-
     }
-
-
-    viewer.data().set_mesh(V, F);
-    viewer.data().set_face_based(true);
-    viewer.core().align_camera_center(V, F);
 }
 
 
@@ -237,47 +244,58 @@ void make_cube(igl::opengl::glfw::Viewer &viewer)
 
 
 
-
-/*
-to load .ply files
-*/
-void load_PLY_builtin(igl::opengl::glfw::Viewer& viewer, const std::string& filename)
-{
+// Initialize the database and load in all meshes with their external features 
+void init_database() {
+    /* -- Load Labeled PSB dataset -- */
 
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
-    //Eigen::MatrixXd V, C, UV;
-    igl::readPLY(filename, V, F);
-    //igl::readPLY(filename, V, F, C, UV);
+    Facetypes type;
 
-
-
-    // Plot the mesh
-    viewer.data().set_mesh(V, F);
-    viewer.data().set_face_based(true);
-    viewer.core().align_camera_center(V, F);
-
+    // Get all directories in the dataset
+    for (const fs::directory_entry& dirEntry : fs::recursive_directory_iterator(LABELEDPSB_LOCATION)) {
+        // Verify that dirEntry is a directory
+        if (fs::is_directory(dirEntry)) {
+            std::cout << "Entering class: " << dirEntry << std::endl;
+            // Get all files in the directory
+            for (const fs::directory_entry& fileEntry : fs::recursive_directory_iterator(dirEntry)) {
+                // Verify that fileEntry is a file
+                if (fs::is_regular_file(fileEntry)) {
+                    // Get the file extension
+                    std::string extension = fileEntry.path().extension().string();
+                    // Verify that the file is a PLY file
+                    if (extension == ".ply") {
+                        // Load the mesh
+                        load_PLY(fileEntry.path().string(), V, F, type);
+                        // Add the mesh to the database
+                        //database.push_back(V);
+                        int num_vertices = V.rows();
+                        int num_faces = F.rows();
+                    }
+                }
+            }
+        }
+    } 
 }
-
-
 
 
 
 int main(int argc, char *argv[])
 {
-
-    //load_PLY_builtin(viewer, "Garuda and Vishnu.ply");
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
     igl::opengl::glfw::Viewer viewer;
+    Facetypes type
     
-    
-    //cout << "Loading mesh from OFF file" << endl;
     //make_cube(viewer);
-    //load_off_builtin(viewer, "61.off");
-    //load_off(viewer, "61.off");
+    load_off("../data/LabeledDB_new/Airplane/61.off", V, F, type);
+    //load_PLY(viewer, "m56.ply", type);
 
-    cout << "Loading mesh from .PLY file" << endl;
-    load_PLY(viewer, "m56.ply");
+    viewer.data().set_mesh(V, F);
+    viewer.data().set_face_based(true);
+    viewer.core().align_camera_center(V, F);
 
+    init_database();
 
     viewer.launch();
 

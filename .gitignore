@@ -33,3 +33,4 @@
 
 build/*
 mesh_loader/build/*
+data/*

@@ -4,6 +4,7 @@ project(main)
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Libigl
+#option(LIBIGL_USE_STATIC_LIBRARY     "Use libIGL as static librarie" ON)
 include(libigl)
 
 # Enable the target igl::glfw

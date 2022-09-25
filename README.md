@@ -1,8 +1,8 @@
 # Multimedia Retrieval Assignment
 
 ## Installation & Setup
- - Run `wsl --install` in a terminal to install WSL 2
- - Install Docker: https://www.docker.com/products/docker-desktop/
+ - Run `wsl --install` in a Administrator Terminal (right click on Powershell to 'Run as Administrator') to install WSL 2
+ - Install Docker: https://www.docker.com/products/docker-desktop/ and run Docker Desktop
  - Install vscode: https://code.visualstudio.com/
  - Install the Remote Development extension: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack
  - Install VcXsrv Windows X Server: https://sourceforge.net/projects/vcxsrv/files/latest/download
@@ -23,3 +23,7 @@
     - https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools-extension-pack
     - https://marketplace.visualstudio.com/items?itemName=tonybaloney.vscode-pets
 
+## Datasets
+ - The datasets should be unzipped into the data directory:
+   - The Princeton shape benchmark (https://web.archive.org/web/20190323023058/http://shape.cs.princeton.edu/benchmark/download/psb_v1.zip) to ./data/psb_v1 such that ./data/psb_v1/benchmark exists
+   - The Labeled PSB dataset (https://people.cs.umass.edu/~kalo/papers/LabelMeshes/labeledDb.7z) to ./data/LabeledDB_new such that ./data/LabeledDB_new/Airplane exists
