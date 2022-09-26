@@ -3,7 +3,7 @@
 ## Installation & Setup
  - Install Python 3.9.13: https://www.python.org/ftp/python/3.9.13/python-3.9.13-amd64.exe - Make sure to select 'Add Python to Path' in the installer!
  - Open a new terminal and run `pip3 install open3d`
- - Run `python test.py` to check that everything works
+ - Run `python open3d_test.py` to check that everything works
 
 ## Datasets
  - The datasets should be unzipped into the data directory:
