@@ -12,3 +12,4 @@
 
 ## Modules
  - Run `python load_meshes.py` to load a sample file and visualize it. Run `python load_meshes.py <path>` to visualize the OFF/PLY file located at `<path>` 
+   - Command Example: `python load_meshes.py data/LabeledDB_new/Airplane/61.off`
