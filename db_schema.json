@@ -1,0 +1,44 @@
+{
+    "$jsonSchema": {
+        "bsonType": "object",
+        "additionalProperties": true,
+        "required": ["name", "path"],
+        "properties": {
+            "_id": {},
+            "name": {
+                "bsonType": "string"
+            },
+            "path": {
+                "bsonType": "string"
+            },
+            "class": {
+                "bsonType": "string"
+            },
+            "numVerts": {
+                "bsonType": "int"
+            },
+            "numFaces": {
+                "bsonType": "int"
+            },
+            "faceType": {
+                "enum": ["tri", "quad", "mixed", "none"],
+                "description": "Type of faces in the mesh: triangles, quads or mixed if both are present"
+            },
+            "aabb": {
+                "bsonType": "array",
+                "minItems": 6,
+                "maxItems": 6,
+                "additionalProperties": false,
+                "description": "Axis-aligned bounding box of the mesh: [minX, minY, minZ, maxX, maxY, maxZ]",
+                "items": [
+                    {"bsonType": "double", "description": "minX"},
+                    {"bsonType": "double", "description": "minY"},
+                    {"bsonType": "double", "description": "minZ"},
+                    {"bsonType": "double", "description": "maxX"},
+                    {"bsonType": "double", "description": "maxY"},
+                    {"bsonType": "double", "description": "maxZ"}
+                ]
+            }
+        }
+    }
+}

@@ -1,6 +1,7 @@
 """Load a mesh from an OFF file.
+    Use returnInfoOnly=True to return the number of vertices and faces, and the type of the faces.
 """
-def load_OFF (filename):
+def load_OFF (filename, returnInfoOnly=False):
     lineCount = 0
     vertexCount = 0
     faceCount = 0
@@ -8,6 +9,7 @@ def load_OFF (filename):
     readVertices = False
     vertices = []
     faces = []
+    faceType = None
 
     with open(filename, 'r') as f:
         for line in f:
@@ -53,11 +55,38 @@ def load_OFF (filename):
                 if int(tokens[0]) == 3:
                     # Read triangle 
                     faces[faceCount] = [int(tokens[1]), int(tokens[2]), int(tokens[3])]
-                elif int(tokens[0]) == 4:
+
+                    # Set face type
+                    if faceType is None:
+                        faceType = 'tri'
+                    elif faceType == 'quad':
+                        faceType = 'mixed'
+                else:
+                    raise Exception('Unsupported face type!')
+                
+                faceCount += 1
+                continue
+
+            if len(tokens) == 5:
+                if not readVertices:
+                    readVertices = True
+
+                if faceCount >= numFaces:
+                    raise Exception('More faces in file than expected!')
+
+                if not readCounts:
+                    raise Exception('File line counts missing!')
+    
+                if int(tokens[0]) == 4:
                     # Read quad
                     faces[faceCount] = [int(tokens[1]), int(tokens[2]), int(tokens[3])]
                     faces[faceCount + 1] = [int(tokens[1]), int(tokens[3]), int(tokens[4])]
-                    faceCount += 1
+
+                    # Set face type
+                    if faceType is None:
+                        faceType = 'quad'
+                    elif faceType == 'tri':
+                        faceType = 'mixed'
                 else:
                     raise Exception('Unsupported face type!')
                 
@@ -66,17 +95,22 @@ def load_OFF (filename):
 
             raise Exception('Unexpected line in file!')
 
-    return vertices, faces
+    if returnInfoOnly:
+        return numVerts, numFaces, faceType
+    else:
+        return vertices, faces
 
 """Load a mesh from an PLY file.
+    Use returnInfoOnly=True to return the number of vertices and faces, and the type of the faces.
 """
-def load_PLY (filename):
+def load_PLY (filename, returnInfoOnly=False):
     lineCount = 0
     vertexCount = 0
     faceCount = 0
     readVertices = False
     vertices = []
     faces = []
+    faceType = None
 
     with open(filename, 'r') as f:
         for line in f:
@@ -125,11 +159,35 @@ def load_PLY (filename):
                 if int(tokens[0]) == 3:
                     # Read triangle 
                     faces[faceCount] = [int(tokens[1]), int(tokens[2]), int(tokens[3])]
-                elif int(tokens[0]) == 4:
+
+                    # Set face type
+                    if faceType is None:
+                        faceType = 'tri'
+                    elif faceType == 'quad':
+                        faceType = 'mixed'
+                else:
+                    raise Exception('Unsupported face type!')
+                
+                faceCount += 1
+                continue
+
+            if len(tokens) == 5:
+                if not readVertices:
+                    readVertices = True
+
+                if faceCount >= numFaces:
+                    raise Exception('More faces in file than expected!')
+
+                if int(tokens[0]) == 4:
                     # Read quad
                     faces[faceCount] = [int(tokens[1]), int(tokens[2]), int(tokens[3])]
                     faces[faceCount + 1] = [int(tokens[1]), int(tokens[3]), int(tokens[4])]
-                    faceCount += 1
+
+                    # Set face type
+                    if faceType is None:
+                        faceType = 'quad'
+                    elif faceType == 'tri':
+                        faceType = 'mixed'
                 else:
                     raise Exception('Unsupported face type!')
                 
@@ -138,7 +196,10 @@ def load_PLY (filename):
 
             raise Exception('Unexpected line in file!')
 
-    return vertices, faces
+    if returnInfoOnly:
+        return numVerts, numFaces, faceType
+    else:
+        return vertices, faces
 
 
 if __name__ == '__main__':
