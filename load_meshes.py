@@ -1,7 +1,16 @@
+from multiprocessing import resource_tracker
+import os
+import random
+from tqdm import tqdm
+import open3d as o3d
+
+LABELED_PSB_DB = os.path.join("data", "LabeledDB_new")
+PRINCETON_DB = os.path.join("data","psb_v1", "benchmark")
+
 """Load a mesh from an OFF file.
     Use returnInfoOnly=True to return the number of vertices and faces, and the type of the faces.
 """
-def load_OFF (filename, returnInfoOnly=False):
+def load_OFF (path, returnInfoOnly=False):
     lineCount = 0
     vertexCount = 0
     faceCount = 0
@@ -11,9 +20,14 @@ def load_OFF (filename, returnInfoOnly=False):
     faces = []
     faceType = None
 
-    with open(filename, 'r') as f:
+    # Check if the file exists
+    if not os.path.isfile(path):
+        raise Exception('File ' + path + ' not found!')
+
+    with open(path, 'r') as f:
         for line in f:
-            if line[0] == '#' or not line.strip() or (lineCount == 0 and line.strip() == 'OFF'):
+            lineCount += 1
+            if line[0] == '#' or not line.strip() or (lineCount == 1 and line.strip() == 'OFF'):
                 continue
 
             # Separate line into tokens
@@ -95,15 +109,26 @@ def load_OFF (filename, returnInfoOnly=False):
 
             raise Exception('Unexpected line in file!')
 
-    if returnInfoOnly:
-        return numVerts, numFaces, faceType
-    else:
-        return vertices, faces
+    # Calculate the AABB
+    aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(vertices))
+
+    result = {
+        "path": path, 
+        "numVerts": numVerts, 
+        "numFaces": numFaces, 
+        "faceType": faceType,
+        "aabb": [aabb.get_min_bound()[0], aabb.get_min_bound()[1], aabb.get_min_bound()[2], aabb.get_max_bound()[0], aabb.get_max_bound()[1], aabb.get_max_bound()[2]]}
+    
+    if not returnInfoOnly:
+        result["vertices"] = vertices
+        result["faces"] = faces
+
+    return result
 
 """Load a mesh from an PLY file.
     Use returnInfoOnly=True to return the number of vertices and faces, and the type of the faces.
 """
-def load_PLY (filename, returnInfoOnly=False):
+def load_PLY (path, returnInfoOnly=False):
     lineCount = 0
     vertexCount = 0
     faceCount = 0
@@ -112,9 +137,14 @@ def load_PLY (filename, returnInfoOnly=False):
     faces = []
     faceType = None
 
-    with open(filename, 'r') as f:
+    # Check if the file exists
+    if not os.path.isfile(path):
+        raise Exception('File ' + path + ' not found!')
+
+    with open(path, 'r') as f:
         for line in f:
-            if line[0:7] == "comment" or not line.strip() or (lineCount == 0 and line.strip() == 'ply') or line.strip() == 'end_header' or line[0:8] == 'property':
+            lineCount += 1
+            if line[0:7] == "comment" or not line.strip() or (lineCount == 1 and line.strip() == 'ply') or line.strip() == 'end_header' or line[0:8] == 'property':
                 continue
 
             # Detect format line
@@ -196,11 +226,126 @@ def load_PLY (filename, returnInfoOnly=False):
 
             raise Exception('Unexpected line in file!')
 
-    if returnInfoOnly:
-        return numVerts, numFaces, faceType
-    else:
-        return vertices, faces
+    # Calculate the AABB
+    aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(vertices))
 
+    result = {
+        "path": path, 
+        "numVerts": numVerts, 
+        "numFaces": numFaces, 
+        "faceType": faceType,
+        "aabb": [aabb.get_min_bound()[0], aabb.get_min_bound()[1], aabb.get_min_bound()[2], aabb.get_max_bound()[0], aabb.get_max_bound()[1], aabb.get_max_bound()[2]]}
+    
+    if not returnInfoOnly:
+        result["vertices"] = vertices
+        result["faces"] = faces
+
+    return result
+
+# Get the shape classification for the Princeton Shape Benchmark
+def get_princeton_shape_classes():
+    classesFile = os.path.join(PRINCETON_DB, "classification", "v1", "coarse1", "coarse1Train.cla")
+    lineCount = 0
+    classCount = 0
+    shapeCount = 0
+    classCounter = 0
+    shapeCounter = 0
+    classes = []
+
+    # Check if the file exists
+    if not os.path.isfile(classesFile):
+        raise Exception('Failed to find the Princeton class shapes file at \'' + classesFile + '\'!')
+        
+    with open(classesFile, 'r') as f:
+        for line in f:
+            lineCount += 1
+
+            if (not line.strip()) or lineCount == 1:
+                continue
+            
+            # Get number of classes and shapes
+            if lineCount == 2:
+                tokens = line.split()
+                classCount = int(tokens[0])
+                shapeCount = int(tokens[1])
+                continue
+                
+            # Separate line into tokens
+            tokens = line.split()
+
+            # Check if line is a class name
+            if not tokens[0].isdigit():
+                if classCounter >= classCount:
+                    raise Exception('More classes in file than expected!')
+
+                classes.append({'name': tokens[0], 'shapes': []})
+                classCounter += 1
+                continue
+
+            # Check if line is a shape number
+            if tokens[0].isdigit():
+                if shapeCounter >= shapeCount:
+                    raise Exception('More shapes in file than expected!')
+
+                classes[classCounter - 1]['shapes'].append(int(tokens[0]))
+                shapeCounter += 1
+                continue
+            
+            raise Exception('Unexpected line in file!')
+
+    return classes
+
+# Load meshes from the Labeled PSB dataset and Princeton Shape Benchmark
+# Use returnInfoOnly=True to return the number of vertices and faces, and the type of the faces only.
+# Use randomSample to randomly sample a subset of the meshes of both datasets
+def get_meshes(fromLPSB=True, fromPRIN=True, randomSample=200, returnInfoOnly=True):
+    directories = [] # Array of all directories to find meshes in, with their associated shape class: [(directory, shapeClass), ...]
+    files = [] # Array of all files to load meshes from: [(filename, shapeClass), ...]
+    results = []
+
+    # Charge Labeled PSB dataset if required
+    if fromLPSB:
+        # Check if the database exists
+        if not os.path.isdir(LABELED_PSB_DB):
+            raise Exception('Failed to find the Labeled PSB database at \'' + LABELED_PSB_DB + '\'!')
+
+        directories = [(os.path.join(LABELED_PSB_DB, d), d) for d in os.listdir(LABELED_PSB_DB) if os.path.isdir(os.path.join(LABELED_PSB_DB, d))]
+
+    # Charge the Princeton Shape Benchmark dataset if required
+    if fromPRIN:
+        classes = get_princeton_shape_classes()
+
+        for c in classes:
+            for s in c['shapes']:
+                if s < 100:
+                    folder = os.path.join(PRINCETON_DB, "db", "0", 'm' + str(s))
+                else:
+                    folder = os.path.join(PRINCETON_DB, "db", str(s)[0:len(str(s))-2], 'm' + str(s))
+                directories.append((folder, c['name']))
+
+    # Find all files located in the loaded directories with file extension .ply or .off
+    for d in directories:
+        for f in os.listdir(d[0]):
+            if f.endswith('.ply') or f.endswith('.off'):
+                files.append((os.path.join(d[0], f), d[1]))
+
+    # Randomly select meshes if needed
+    if randomSample > 0:
+        files = random.sample(files, randomSample)
+
+    # Load the meshes
+    for f in tqdm(files, desc='Loading meshes', ncols=150):
+        if f[0].endswith('.off'):
+            res = load_OFF(f[0], returnInfoOnly)
+        elif f[0].endswith('.ply'):
+            res = load_PLY(f[0], returnInfoOnly)
+        else:
+            continue
+
+        res["class"] = f[1]
+        results.append(res)
+    
+    return results
 
 if __name__ == '__main__':
     import sys
@@ -214,9 +359,13 @@ if __name__ == '__main__':
         filename = 'data/ply/airplane.ply'
 
     if filename[-4:] == '.ply':
-        vertices, faces = load_PLY(filename)
+        mesh = load_PLY(filename, False)
+        vertices = mesh['vertices']
+        faces = mesh['faces']
     elif filename[-4:] == '.off':
-        vertices, faces = load_OFF(filename)
+        mesh = load_OFF(filename)
+        vertices = mesh['vertices']
+        faces = mesh['faces']
     else:
         raise Exception('Unsupported file format!')
 
@@ -225,3 +374,5 @@ if __name__ == '__main__':
     mesh.triangles = o3d.utility.Vector3iVector(faces)
     mesh.paint_uniform_color([1, 0.706, 0])
     o3d.visualization.draw_geometries([mesh])
+
+    test = get_meshes(fromLPSB=True, fromPRIN=True, randomSample=200, returnInfoOnly=True) # Place a breakpoint here to test the function

@@ -199,7 +199,7 @@ def print_help():
     print("  Ctrl/Cmd + C : Copy current view status into the clipboard.")
     print("  Ctrl/Cmd + V : Paste view status from clipboard.")
     print("")
-    print("-- Mesh control --")
+    print("-- Visual options --")
     print("  W            : Toggle wireframe.")
     print("  S            : Switch shading option.")
     print("  B            : Toggle skybox.")

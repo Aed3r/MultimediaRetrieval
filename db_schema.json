@@ -2,12 +2,9 @@
     "$jsonSchema": {
         "bsonType": "object",
         "additionalProperties": true,
-        "required": ["name", "path"],
+        "required": ["path"],
         "properties": {
             "_id": {},
-            "name": {
-                "bsonType": "string"
-            },
             "path": {
                 "bsonType": "string"
             },

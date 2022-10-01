@@ -2,8 +2,10 @@
 
 ## Installation & Setup
  - Install Python 3.9.13: https://www.python.org/ftp/python/3.9.13/python-3.9.13-amd64.exe - Make sure to select 'Add Python to Path' in the installer!
- - Open a new terminal and run `pip3 install open3d`
- - Run `python open3d_test.py` to check that everything works
+ - Install mongodb: https://www.mongodb.com/docs/manual/installation/
+ - Install all python modules: open a new terminal at the project root and run `pip3 install -r requirements.txt`
+ - Run `python3.9 open3d_test.py` to check that open3d works
+ - Build the basic database with `python3.9 database.py` to check that mongodb and pymongo work
 
 ## Datasets
  - The datasets should be unzipped into the data directory:
