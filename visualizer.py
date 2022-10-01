@@ -32,7 +32,7 @@ class MMRVISUALIZER:
         self._plasticMat.base_metallic = 0.0
         self._plasticMat.base_roughness = 0.5
         self._plasticMat.base_reflectance = 0.5
-        self._plasticMat.base_clearcoat = 0.0
+        self._plasticMat.base_clearcoat = 0.5
         self._plasticMat.base_clearcoat_roughness = 0.2
         self._plasticMat.base_anisotropy = 0.0
         self._plasticMat.shader = "defaultLit"
@@ -40,6 +40,7 @@ class MMRVISUALIZER:
 
         # Add mesh with material
         self._mesh = mesh
+        self._mesh.compute_vertex_normals()
         self.widget3d.scene.add_geometry("Mesh", self._mesh, self._plasticMat)
 
         # Set lighting
@@ -152,6 +153,7 @@ class MMRVISUALIZER:
                 if self._plasticMat.shader == "none":
                     # Remove mesh
                     self.widget3d.scene.remove_geometry("Mesh")
+                    update_shadingLabel()
                     return gui.Widget.EventCallbackResult.HANDLED
                 elif self._plasticMat.shader == "defaultUnlit":
                     # Add mesh with unlit material
@@ -204,7 +206,7 @@ def print_help():
     print("  S            : Switch shading option.")
     print("  B            : Toggle skybox.")
     print("  A            : Toggle axis.")
-    print("  Y            : Switch shadow options.")
+    print("  Y            : Switch lighting options.")
     print("")
     print("-- General control --")
     print("  Q, Esc       : Exit window.")

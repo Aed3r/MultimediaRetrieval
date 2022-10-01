@@ -297,7 +297,7 @@ def get_princeton_shape_classes():
 
 # Load meshes from the Labeled PSB dataset and Princeton Shape Benchmark
 # Use returnInfoOnly=True to return the number of vertices and faces, and the type of the faces only.
-# Use randomSample to randomly sample a subset of the meshes of both datasets
+# Use randomSample to randomly sample a subset of the meshes of both datasets. Use -1 to load all meshes.
 def get_meshes(fromLPSB=True, fromPRIN=True, randomSample=200, returnInfoOnly=True):
     directories = [] # Array of all directories to find meshes in, with their associated shape class: [(directory, shapeClass), ...]
     files = [] # Array of all files to load meshes from: [(filename, shapeClass), ...]
@@ -373,6 +373,7 @@ if __name__ == '__main__':
     mesh.vertices = o3d.utility.Vector3dVector(vertices)
     mesh.triangles = o3d.utility.Vector3iVector(faces)
     mesh.paint_uniform_color([1, 0.706, 0])
+    mesh.compute_vertex_normals()
     o3d.visualization.draw_geometries([mesh])
 
     test = get_meshes(fromLPSB=True, fromPRIN=True, randomSample=200, returnInfoOnly=True) # Place a breakpoint here to test the function
