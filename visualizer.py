@@ -2,6 +2,7 @@ import numpy as np
 import open3d as o3d
 import open3d.visualization.gui as gui
 import open3d.visualization.rendering as rendering
+import util
 
 # More advanced visualizer based on the Open3D GetCoord Example.
 class MMRVISUALIZER:
@@ -40,8 +41,11 @@ class MMRVISUALIZER:
 
         # Add mesh with material
         self._mesh = mesh
-        self._mesh.compute_vertex_normals()
-        self.widget3d.scene.add_geometry("Mesh", self._mesh, self._plasticMat)
+        self._geometry = o3d.geometry.TriangleMesh()
+        self._geometry.vertices = o3d.utility.Vector3dVector(self._mesh.vertices)
+        self._geometry.triangles = o3d.utility.Vector3iVector(self._mesh.faces)
+        self._geometry.compute_vertex_normals()
+        self.widget3d.scene.add_geometry("Mesh", self._geometry, self._plasticMat)
 
         # Set lighting
         self.widget3d.scene.set_background([1.0000, 1.0000, 0.9294, 1.0000])
@@ -72,6 +76,13 @@ class MMRVISUALIZER:
 
         self.widget3d.set_on_mouse(self._on_mouse_widget3d)
         self.widget3d.set_on_key(self._on_key_widget3d)
+
+        self._shapeAligned = False
+        self._aligned_mesh = util.align_shape(self._mesh)
+        self._aligned_geometry = o3d.geometry.TriangleMesh()
+        self._aligned_geometry.vertices = o3d.utility.Vector3dVector(self._aligned_mesh.vertices)
+        self._aligned_geometry.triangles = o3d.utility.Vector3iVector(self._aligned_mesh.faces)
+        self._aligned_geometry.compute_vertex_normals()
 
     def _on_layout(self, layout_context):
         r = self.window.content_rect
@@ -157,7 +168,10 @@ class MMRVISUALIZER:
                     return gui.Widget.EventCallbackResult.HANDLED
                 elif self._plasticMat.shader == "defaultUnlit":
                     # Add mesh with unlit material
-                    self.widget3d.scene.add_geometry("Mesh", self._mesh, self._plasticMat)
+                    if self._shapeAligned:
+                        self.widget3d.scene.add_geometry("Mesh", self._aligned_geometry, self._plasticMat)
+                    else:
+                        self.widget3d.scene.add_geometry("Mesh", self._geometry, self._plasticMat)
 
                 if self._showWireframe:
                     self.widget3d.scene.remove_geometry("Wireframe")
@@ -182,7 +196,17 @@ class MMRVISUALIZER:
 
                 # Update label
                 update_shadingLabel()
-                
+            elif event.key == gui.F:
+                # Align the shape
+                if self._shapeAligned:
+                    self.widget3d.scene.remove_geometry("AlignedMesh")
+                    self.widget3d.scene.add_geometry("Mesh", self._geometry, self._plasticMat)
+                    self._shapeAligned = False
+                else:
+                    self.widget3d.scene.remove_geometry("Mesh")
+                    self.widget3d.scene.add_geometry("AlignedMesh", self._aligned_geometry, self._plasticMat)
+                    self._shapeAligned = True
+                            
             return gui.Widget.EventCallbackResult.HANDLED
         return gui.Widget.EventCallbackResult.IGNORED
         
@@ -207,6 +231,7 @@ def print_help():
     print("  B            : Toggle skybox.")
     print("  A            : Toggle axis.")
     print("  Y            : Switch lighting options.")
+    print("  F            : Align the shape.")
     print("")
     print("-- General control --")
     print("  Q, Esc       : Exit window.")
@@ -216,14 +241,18 @@ def print_help():
     print("  O            : Take a capture of current rendering settings.")
 
 def main():
+    import load_meshes
+
     app = gui.Application.instance
     app.initialize()
 
     print_help()
 
-    armadillo_mesh = o3d.data.ArmadilloMesh()
-    mesh = o3d.io.read_triangle_mesh(armadillo_mesh.path)
-    ex = MMRVISUALIZER(mesh)
+    #armadillo_mesh = o3d.data.ArmadilloMesh()
+    #mesh = o3d.io.read_triangle_mesh(armadillo_mesh.path)
+
+    random_mesh = load_meshes.get_meshes(True, True, 1, False)[0]
+    ex = MMRVISUALIZER(random_mesh)
 
     app.run()
 
