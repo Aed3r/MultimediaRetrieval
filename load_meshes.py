@@ -5,7 +5,7 @@ from tqdm import tqdm
 import open3d as o3d
 
 LABELED_PSB_DB = os.path.join("data", "LabeledDB_new")
-PRINCETON_DB = os.path.join("data","psb_v1")
+PRINCETON_DB = os.path.join("data","psb_v1", "benchmark")
 
 """Load a mesh from an OFF file.
     Use returnInfoOnly=True to return the number of vertices and faces, and the type of the faces.
