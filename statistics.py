@@ -38,7 +38,6 @@ if __name__ == '__main__':
     # data = load_meshes.get_meshes(fromLPSB=False, fromPRIN=True, randomSample=-1, returnInfoOnly=True)
     data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=-1, returnInfoOnly=True)
     print(data)
-    print("hi")
     print(type(data)) # list
     print(data[1])
     print(type(data[1])) # dict
