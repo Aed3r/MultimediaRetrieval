@@ -2,6 +2,7 @@ import numpy as np
 import open3d as o3d
 import open3d.visualization.gui as gui
 import open3d.visualization.rendering as rendering
+import util
 
 # More advanced visualizer based on the Open3D GetCoord Example.
 class MMRVISUALIZER:
@@ -24,6 +25,10 @@ class MMRVISUALIZER:
         self.shadingLabel.visible = False
         self.window.add_child(self.shadingLabel)
 
+        self.normLabel = gui.Label("")
+        self.normLabel.visible = False
+        self.window.add_child(self.normLabel)
+
         self.widget3d.scene = rendering.Open3DScene(self.window.renderer)
 
         # Set material
@@ -40,8 +45,16 @@ class MMRVISUALIZER:
 
         # Add mesh with material
         self._mesh = mesh
-        self._mesh.compute_vertex_normals()
-        self.widget3d.scene.add_geometry("Mesh", self._mesh, self._plasticMat)
+        self._geometry = o3d.geometry.TriangleMesh()
+        self._geometry.vertices = o3d.utility.Vector3dVector(self._mesh["vertices"])
+        self._geometry.triangles = o3d.utility.Vector3iVector(self._mesh["faces"])
+        self._geometry.compute_vertex_normals()
+        self.widget3d.scene.add_geometry("Mesh", self._geometry, self._plasticMat)
+
+        # Normalized mesh
+        self._norm_mesh = self._mesh.copy()
+        self._normalizationSteps = ["None", "Remeshed", "Translated", "Posed", "Flipped", "Scaled"]
+        self._normalizationStep = 0
 
         # Set lighting
         self.widget3d.scene.set_background([1.0000, 1.0000, 0.9294, 1.0000])
@@ -62,9 +75,9 @@ class MMRVISUALIZER:
         self.wireframeMat = rendering.MaterialRecord()
         self.wireframeMat.shader = "defaultUnlit"
         self.wireframeMat.base_color = [0.0, 0.0, 0.0, 1.0]
-        self.wireframe = o3d.geometry.LineSet.create_from_triangle_mesh(mesh)
         self._showWireframe = False
-
+        self.update_wireframe()
+        
         bounds = self.widget3d.scene.bounding_box
         center = bounds.get_center()
         self.widget3d.setup_camera(60, bounds, center)
@@ -72,6 +85,14 @@ class MMRVISUALIZER:
 
         self.widget3d.set_on_mouse(self._on_mouse_widget3d)
         self.widget3d.set_on_key(self._on_key_widget3d)
+
+    def update_wireframe(self):
+        self.wireframe = o3d.geometry.LineSet.create_from_triangle_mesh(self._geometry)
+        
+        if self._showWireframe:
+            # Remove current wireframe
+            self.widget3d.scene.remove_geometry("Wireframe")
+            self.widget3d.scene.add_geometry("Wireframe", self.wireframe, self.wireframeMat)
 
     def _on_layout(self, layout_context):
         r = self.window.content_rect
@@ -81,10 +102,18 @@ class MMRVISUALIZER:
 
         prefShading = self.shadingLabel.calc_preferred_size(layout_context,
                                              gui.Widget.Constraints())
+
+        prefNorm = self.normLabel.calc_preferred_size(layout_context,
+                                             gui.Widget.Constraints())
+
         self.info.frame = gui.Rect(r.x,
                                    r.get_bottom() - pref.height, pref.width,
                                    pref.height)
         self.shadingLabel.frame = gui.Rect(r.x, r.y, prefShading.width, prefShading.height)
+        self.normLabel.frame = gui.Rect(r.get_right() - prefNorm.width, r.y, prefNorm.width, prefNorm.height)
+
+
+
 
     def _on_mouse_widget3d(self, event):
         # We could override BUTTON_DOWN without a modifier, but that would
@@ -133,9 +162,15 @@ class MMRVISUALIZER:
             self.shadingLabel.text = text
             self.shadingLabel.visible = (text != "")
             self.window.set_needs_layout()
+
+        def update_normLabel():
+            text = "Normalization step: " + self._normalizationSteps[self._normalizationStep]
+            self.normLabel.text = text
+            self.normLabel.visible = (text != "")
+            self.window.set_needs_layout()
         
         if event.type == gui.KeyEvent.Type.DOWN:
-            if event.key == gui.W:
+            if event.key == gui.F1:
                 if self._showWireframe:
                     # Remove wireframe
                     self.widget3d.scene.remove_geometry("Wireframe")
@@ -144,7 +179,7 @@ class MMRVISUALIZER:
                     # Add wireframe
                     self.widget3d.scene.add_geometry("Wireframe", self.wireframe, self.wireframeMat)
                     self._showWireframe = True
-            elif event.key == gui.S:
+            elif event.key == gui.F2:
                 # Switch shading option
                 self._plasticMat.shader = self._shadingOptions[
                     (self._shadingOptions.index(self._plasticMat.shader) + 1) %
@@ -157,7 +192,7 @@ class MMRVISUALIZER:
                     return gui.Widget.EventCallbackResult.HANDLED
                 elif self._plasticMat.shader == "defaultUnlit":
                     # Add mesh with unlit material
-                    self.widget3d.scene.add_geometry("Mesh", self._mesh, self._plasticMat)
+                    self.widget3d.scene.add_geometry("Mesh", self._geometry, self._plasticMat)
 
                 if self._showWireframe:
                     self.widget3d.scene.remove_geometry("Wireframe")
@@ -167,22 +202,91 @@ class MMRVISUALIZER:
 
                 # Update label
                 update_shadingLabel()
-            elif event.key == gui.B:
+            elif event.key == gui.F3:
                 # Switch skybox on or off
                 self.widget3d.scene.show_skybox(not self._showSkybox)
                 self._showSkybox = not self._showSkybox
-            elif event.key == gui.A:
+            elif event.key == gui.F4:
                 # Switch axis on or off
                 self.widget3d.scene.show_axes(not self._showAxes)
                 self._showAxes = not self._showAxes
-            elif event.key == gui.Y:
+            elif event.key == gui.F5:
                 # Switch shadow options
                 self._shadowIndex = (self._shadowIndex + 1) % len(self._shadowOptions)
                 self.widget3d.scene.set_lighting(self._shadowOptions[self._shadowIndex], self._sunDir)
 
                 # Update label
                 update_shadingLabel()
+            elif event.key == gui.F6:
+                # Go through normalization steps
+                if self._normalizationStep == 0:
+                    # Remeshing
+                    #self._norm_mesh = util.resampling(self._norm_mesh)  
+                    self._geometry.vertices = o3d.utility.Vector3dVector(self._norm_mesh["vertices"])
+                    self._geometry.triangles = o3d.utility.Vector3iVector(self._norm_mesh["faces"])
+                    self._geometry.compute_vertex_normals()   
+
+                    # Set the new geometry
+                    self.widget3d.scene.remove_geometry("Mesh")
+                    self.widget3d.scene.add_geometry("NormMesh", self._geometry, self._plasticMat)
+                    self._normalizationStep = 1
+                elif self._normalizationStep == 1:
+                    # Translation
+                    self._norm_mesh = util.translate_mesh_to_origin(self._norm_mesh)
+                    self._geometry.vertices = o3d.utility.Vector3dVector(self._norm_mesh["vertices"])
+                    self._geometry.triangles = o3d.utility.Vector3iVector(self._norm_mesh["faces"])
+                    self._geometry.compute_vertex_normals()   
+
+                    # Set the new geometry
+                    self.widget3d.scene.remove_geometry("NormMesh")
+                    self.widget3d.scene.add_geometry("NormMesh", self._geometry, self._plasticMat)
+                    self._normalizationStep = 2
+                elif self._normalizationStep == 2:
+                    # Pose
+                    self._norm_mesh = util.align_shape(self._norm_mesh)
+                    self._geometry.vertices = o3d.utility.Vector3dVector(self._norm_mesh["vertices"])
+                    self._geometry.triangles = o3d.utility.Vector3iVector(self._norm_mesh["faces"])
+                    self._geometry.compute_vertex_normals()   
+
+                    # Set the new geometry
+                    self.widget3d.scene.remove_geometry("NormMesh")
+                    self.widget3d.scene.add_geometry("NormMesh", self._geometry, self._plasticMat)
+                    self._normalizationStep = 3
+                elif self._normalizationStep == 3:
+                    # Flipping
+                    self._norm_mesh = util.flipping_test(self._norm_mesh)
+                    self._geometry.vertices = o3d.utility.Vector3dVector(self._norm_mesh["vertices"])
+                    self._geometry.triangles = o3d.utility.Vector3iVector(self._norm_mesh["faces"])
+                    self._geometry.compute_vertex_normals()   
+
+                    # Set the new geometry
+                    self.widget3d.scene.remove_geometry("NormMesh")
+                    self.widget3d.scene.add_geometry("NormMesh", self._geometry, self._plasticMat)
+                    self._normalizationStep = 4
+                elif self._normalizationStep == 4:
+                    # Scale
+                    self._norm_mesh = util.scale_mesh_to_unit(self._norm_mesh)
+                    self._geometry.vertices = o3d.utility.Vector3dVector(self._norm_mesh["vertices"])
+                    self._geometry.triangles = o3d.utility.Vector3iVector(self._norm_mesh["faces"])
+                    self._geometry.compute_vertex_normals()   
+
+                    # Set the new geometry
+                    self.widget3d.scene.remove_geometry("NormMesh")
+                    self.widget3d.scene.add_geometry("NormMesh", self._geometry, self._plasticMat)
+                    self._normalizationStep = 5
+                elif self._normalizationStep == 5:
+                    # Back to original mesh
+                    self._geometry.vertices = o3d.utility.Vector3dVector(self._mesh["vertices"])
+                    self._geometry.triangles = o3d.utility.Vector3iVector(self._mesh["faces"])
+                    self._geometry.compute_vertex_normals()  
+
+                    self.widget3d.scene.remove_geometry("NormMesh")
+                    self.widget3d.scene.add_geometry("Mesh", self._geometry, self._plasticMat)
+                    self._normalizationStep = 0
                 
+                update_normLabel()
+                self.update_wireframe()
+
             return gui.Widget.EventCallbackResult.HANDLED
         return gui.Widget.EventCallbackResult.IGNORED
         
@@ -201,12 +305,13 @@ def print_help():
     print("  Ctrl/Cmd + C : Copy current view status into the clipboard.")
     print("  Ctrl/Cmd + V : Paste view status from clipboard.")
     print("")
-    print("-- Visual options --")
-    print("  W            : Toggle wireframe.")
-    print("  S            : Switch shading option.")
-    print("  B            : Toggle skybox.")
-    print("  A            : Toggle axis.")
-    print("  Y            : Switch lighting options.")
+    print("-- Visual and mesh options --")
+    print("  F1            : Toggle wireframe.")
+    print("  F2            : Switch shading option.")
+    print("  F3            : Toggle skybox.")
+    print("  F4            : Toggle axis.")
+    print("  F5            : Switch lighting options.")
+    print("  F6            : Normalisation steps.")
     print("")
     print("-- General control --")
     print("  Q, Esc       : Exit window.")
@@ -216,14 +321,18 @@ def print_help():
     print("  O            : Take a capture of current rendering settings.")
 
 def main():
+    import load_meshes
+
     app = gui.Application.instance
     app.initialize()
 
     print_help()
 
-    armadillo_mesh = o3d.data.ArmadilloMesh()
-    mesh = o3d.io.read_triangle_mesh(armadillo_mesh.path)
-    ex = MMRVISUALIZER(mesh)
+    #armadillo_mesh = o3d.data.ArmadilloMesh()
+    #mesh = o3d.io.read_triangle_mesh(armadillo_mesh.path)
+
+    random_mesh = load_meshes.get_meshes(True, True, 1, False)[0]
+    ex = MMRVISUALIZER(random_mesh)
 
     app.run()
 
