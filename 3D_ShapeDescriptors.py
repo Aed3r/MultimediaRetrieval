@@ -74,7 +74,6 @@ def hole_stitching(data):
     return data
 
 
-
 def get_Compactness(data):
     Compactness = []
 
@@ -109,9 +108,10 @@ if __name__ == '__main__':
     Compactness = get_Compactness(util_data)
     for i in range(len(Compactness)):
         print("The %dth data feature: " %(i+1))
-        print("Volume: %.20f" %Volume[i])
+        print("Volume: %.20f" %Volume[i]) # The volume is too small sometimes
         print("Surface Area:%.5f" %SurfaceArea[i])
         print("Compactness: %.5f" %Compactness[i])
+
 
     # for i in range(len(RepairedMesh)):
     #     mesh = o3d.geometry.TriangleMesh()
