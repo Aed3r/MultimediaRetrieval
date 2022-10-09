@@ -4,6 +4,7 @@ import open3d as o3d
 import util
 from tqdm import tqdm
 import pymeshfix
+import math
 
 def triangle_area(tri):
     # triangle
@@ -72,8 +73,26 @@ def hole_stitching(data):
 
     return data
 
+
+
+def get_Compactness(data):
+    Compactness = []
+
+    for i in tqdm(range(len(data)), desc = "Computing", ncols = 100): # get each shape
+        comP = 0
+        SurfaceArea = get_SurfaceArea(data)
+        Volume = get_Volume(data)
+        S_3 = SurfaceArea[i]*SurfaceArea[i]*SurfaceArea[i] # cannot use np.power() here, or the list would transfer to array automatically
+        V_2 = Volume[i]*Volume[i]
+        comP = S_3/(36*(math.pi)*V_2)
+        Compactness.append(comP) 
+    return Compactness
+
+
+
+
 if __name__ == '__main__':
-    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=3, returnInfoOnly=False)
+    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=5, returnInfoOnly=False)
 
     # get normalized mesh
     util_data = []
@@ -87,8 +106,12 @@ if __name__ == '__main__':
 
     SurfaceArea = get_SurfaceArea(util_data)
     Volume = get_Volume(util_data)
-
-    #print (Volume)
+    Compactness = get_Compactness(util_data)
+    for i in range(len(Compactness)):
+        print("The %dth data feature: " %(i+1))
+        print("Volume: %.20f" %Volume[i])
+        print("Surface Area:%.5f" %SurfaceArea[i])
+        print("Compactness: %.5f" %Compactness[i])
 
     # for i in range(len(RepairedMesh)):
     #     mesh = o3d.geometry.TriangleMesh()
