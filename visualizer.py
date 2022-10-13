@@ -2,7 +2,7 @@ import numpy as np
 import open3d as o3d
 import open3d.visualization.gui as gui
 import open3d.visualization.rendering as rendering
-import util
+import normalization
 
 # More advanced visualizer based on the Open3D GetCoord Example.
 class MMRVISUALIZER:
@@ -45,10 +45,12 @@ class MMRVISUALIZER:
 
         # Add mesh with material
         self._mesh = mesh
+        self._ogVertices = o3d.utility.Vector3dVector(self._mesh["vertices"])
+        self._ogFaces = o3d.utility.Vector3iVector(self._mesh["faces"])
         self._geometry = o3d.geometry.TriangleMesh()
-        self._geometry.vertices = o3d.utility.Vector3dVector(self._mesh["vertices"])
-        self._geometry.triangles = o3d.utility.Vector3iVector(self._mesh["faces"])
-        self._geometry.compute_vertex_normals()
+        self._geometry.vertices = self._ogVertices
+        self._geometry.triangles = self._ogFaces
+        self._geometry.compute_triangle_normals()
         self.widget3d.scene.add_geometry("Mesh", self._geometry, self._plasticMat)
 
         # Normalized mesh
@@ -194,12 +196,9 @@ class MMRVISUALIZER:
                     # Add mesh with unlit material
                     self.widget3d.scene.add_geometry("Mesh", self._geometry, self._plasticMat)
 
-                if self._showWireframe:
-                    self.widget3d.scene.remove_geometry("Wireframe")
                 self.widget3d.scene.update_material(self._plasticMat)
-                if self._showWireframe:
-                    self.widget3d.scene.add_geometry("Wireframe", self.wireframe, self.wireframeMat)
-
+                self.update_wireframe()
+                
                 # Update label
                 update_shadingLabel()
             elif event.key == gui.F3:
@@ -221,71 +220,48 @@ class MMRVISUALIZER:
                 # Go through normalization steps
                 if self._normalizationStep == 0:
                     # Remeshing
-                    #self._norm_mesh = util.resampling(self._norm_mesh)  
+                    self._norm_mesh = normalization.resampling(self._norm_mesh)  
                     self._geometry.vertices = o3d.utility.Vector3dVector(self._norm_mesh["vertices"])
-                    self._geometry.triangles = o3d.utility.Vector3iVector(self._norm_mesh["faces"])
-                    self._geometry.compute_vertex_normals()   
-
-                    # Set the new geometry
-                    self.widget3d.scene.remove_geometry("Mesh")
-                    self.widget3d.scene.add_geometry("NormMesh", self._geometry, self._plasticMat)
+                    self._geometry.triangles = o3d.utility.Vector3iVector(self._norm_mesh["faces"])   
                     self._normalizationStep = 1
                 elif self._normalizationStep == 1:
                     # Translation
-                    self._norm_mesh = util.translate_mesh_to_origin(self._norm_mesh)
+                    self._norm_mesh = normalization.translate_mesh_to_origin(self._norm_mesh)
                     self._geometry.vertices = o3d.utility.Vector3dVector(self._norm_mesh["vertices"])
-                    self._geometry.triangles = o3d.utility.Vector3iVector(self._norm_mesh["faces"])
-                    self._geometry.compute_vertex_normals()   
-
-                    # Set the new geometry
-                    self.widget3d.scene.remove_geometry("NormMesh")
-                    self.widget3d.scene.add_geometry("NormMesh", self._geometry, self._plasticMat)
+                    self._geometry.triangles = o3d.utility.Vector3iVector(self._norm_mesh["faces"])   
                     self._normalizationStep = 2
                 elif self._normalizationStep == 2:
                     # Pose
-                    self._norm_mesh = util.align_shape(self._norm_mesh)
+                    self._norm_mesh = normalization.align_shape(self._norm_mesh)
                     self._geometry.vertices = o3d.utility.Vector3dVector(self._norm_mesh["vertices"])
-                    self._geometry.triangles = o3d.utility.Vector3iVector(self._norm_mesh["faces"])
-                    self._geometry.compute_vertex_normals()   
-
-                    # Set the new geometry
-                    self.widget3d.scene.remove_geometry("NormMesh")
-                    self.widget3d.scene.add_geometry("NormMesh", self._geometry, self._plasticMat)
+                    self._geometry.triangles = o3d.utility.Vector3iVector(self._norm_mesh["faces"])   
                     self._normalizationStep = 3
                 elif self._normalizationStep == 3:
                     # Flipping
-                    self._norm_mesh = util.flipping_test(self._norm_mesh)
+                    self._norm_mesh = normalization.flipping_test(self._norm_mesh)
                     self._geometry.vertices = o3d.utility.Vector3dVector(self._norm_mesh["vertices"])
-                    self._geometry.triangles = o3d.utility.Vector3iVector(self._norm_mesh["faces"])
-                    self._geometry.compute_vertex_normals()   
-
-                    # Set the new geometry
-                    self.widget3d.scene.remove_geometry("NormMesh")
-                    self.widget3d.scene.add_geometry("NormMesh", self._geometry, self._plasticMat)
+                    self._geometry.triangles = o3d.utility.Vector3iVector(self._norm_mesh["faces"])   
                     self._normalizationStep = 4
                 elif self._normalizationStep == 4:
                     # Scale
-                    self._norm_mesh = util.scale_mesh_to_unit(self._norm_mesh)
+                    self._norm_mesh = normalization.scale_mesh_to_unit(self._norm_mesh)
                     self._geometry.vertices = o3d.utility.Vector3dVector(self._norm_mesh["vertices"])
-                    self._geometry.triangles = o3d.utility.Vector3iVector(self._norm_mesh["faces"])
-                    self._geometry.compute_vertex_normals()   
-
-                    # Set the new geometry
-                    self.widget3d.scene.remove_geometry("NormMesh")
-                    self.widget3d.scene.add_geometry("NormMesh", self._geometry, self._plasticMat)
+                    self._geometry.triangles = o3d.utility.Vector3iVector(self._norm_mesh["faces"])   
                     self._normalizationStep = 5
                 elif self._normalizationStep == 5:
                     # Back to original mesh
-                    self._geometry.vertices = o3d.utility.Vector3dVector(self._mesh["vertices"])
-                    self._geometry.triangles = o3d.utility.Vector3iVector(self._mesh["faces"])
-                    self._geometry.compute_vertex_normals()  
-
-                    self.widget3d.scene.remove_geometry("NormMesh")
-                    self.widget3d.scene.add_geometry("Mesh", self._geometry, self._plasticMat)
+                    self._geometry.vertices = self._ogVertices
+                    self._geometry.triangles = self._ogFaces
+                    self._norm_mesh = self._mesh.copy()
                     self._normalizationStep = 0
                 
                 update_normLabel()
                 self.update_wireframe()
+                self._geometry.compute_triangle_normals()
+                self.widget3d.scene.remove_geometry("Mesh")
+                if self._plasticMat.shader != "none":
+                    self.widget3d.scene.add_geometry("Mesh", self._geometry, self._plasticMat)
+                    
 
             return gui.Widget.EventCallbackResult.HANDLED
         return gui.Widget.EventCallbackResult.IGNORED
@@ -322,17 +298,33 @@ def print_help():
 
 def main():
     import load_meshes
+    import sys
+    import os
 
     app = gui.Application.instance
     app.initialize()
 
     print_help()
 
-    #armadillo_mesh = o3d.data.ArmadilloMesh()
-    #mesh = o3d.io.read_triangle_mesh(armadillo_mesh.path)
+    # Check if there is a command line argument
+    if len(sys.argv) > 1:
+        mesh_path = sys.argv[1]
 
-    random_mesh = load_meshes.get_meshes(True, True, 1, False)[0]
-    ex = MMRVISUALIZER(random_mesh)
+        # Check if the file exists
+        if not os.path.isfile(mesh_path):
+            raise Exception("File does not exist: {}".format(mesh_path))
+
+        # Load the mesh
+        if mesh_path.endswith('.off'):
+            mesh = load_meshes.load_OFF(mesh_path, False)
+        elif mesh_path.endswith('.ply'):
+            mesh = load_meshes.load_PLY(mesh_path, False)
+        else:
+            raise Exception("File format not supported")
+    else:
+        mesh = load_meshes.get_meshes(True, True, 1, False)[0]
+
+    ex = MMRVISUALIZER(mesh)
 
     app.run()
 
