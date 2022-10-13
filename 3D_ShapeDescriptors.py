@@ -87,11 +87,16 @@ def get_Compactness(data):
         Compactness.append(comP) 
     return Compactness
 
-
+def get_aabbVolume(data):
+    aabbVolume = []
+    for i in range(len(data)):
+        aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(data[i]['vertices']))
+        aabbVolume.append(aabb.volume())
+    return aabbVolume
 
 
 if __name__ == '__main__':
-    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=5, returnInfoOnly=False)
+    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=1, returnInfoOnly=False)
 
     # get normalized mesh
     util_data = []
@@ -106,11 +111,15 @@ if __name__ == '__main__':
     SurfaceArea = get_SurfaceArea(util_data)
     Volume = get_Volume(util_data)
     Compactness = get_Compactness(util_data)
+    aabbVolume = get_aabbVolume(util_data)
+
+
     for i in range(len(Compactness)):
         print("The %dth data feature: " %(i+1))
         print("Volume: %.20f" %Volume[i]) # The volume is too small sometimes
         print("Surface Area:%.5f" %SurfaceArea[i])
         print("Compactness: %.5f" %Compactness[i])
+        print("Axis-aligned bounding-box volume: %.5f" %aabbVolume[i])
 
 
     # for i in range(len(RepairedMesh)):
