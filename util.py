@@ -84,6 +84,18 @@ def angle_between(v1, v2, v3):
     v2 = v3 - v2
     return np.arccos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
+# Returns the distance between the 2 given vertices
+def distance_between(v1, v2):
+    return np.linalg.norm(v1 - v2)
+
+# Returns the square root of area of triangle given by 3 random vertices
+def triangle_area(v1, v2, v3):
+    a = distance_between(v1, v2)
+    b = distance_between(v2, v3)
+    c = distance_between(v1, v3)
+    s = (a + b + c) / 2
+    return np.sqrt(s * (s - a) * (s - b) * (s - c))
+
 if __name__ == "__main__":
     import load_meshes
 
