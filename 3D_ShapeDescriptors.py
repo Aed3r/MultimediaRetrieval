@@ -118,6 +118,40 @@ def o3d_Get_Volume(data):
     return V
 
 
+def get_diameter(data):
+    Diameter = []
+    for i in range(len(data)):
+        distances = []
+        #mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(data[i]['vertices']), o3d.cpu.pybind.utility.Vector3iVector(data[i]['faces']))
+        mesh = data[i]
+        #print(np.asarray(mesh['vertices']))
+        print(len(data[i]['vertices']))
+        for j in range(len(mesh['vertices'])): # The calculation is too complex!!!! need to reimplement it
+            for n in range(len(mesh['vertices'])):
+                vertex1 = mesh['vertices'][j]
+                vertex2 = mesh['vertices'][n]
+                print(vertex1)
+                print(vertex2)
+                dist = util.distance_between(vertex1, vertex2)
+                distances.append(dist)
+        # calculate the distance between all 2 vertices
+        # find the maximum
+        diameter = max(distances)
+        Diameter.append(diameter)
+    return Diameter
+
+# Calculate the eccentricity of a mesh list
+def get_eccentricity(data):
+    #Eccentricity = eigenvalue1 / eigenvalue3
+    eccentricity = []
+    for i in range(len(data)):
+        mesh = data[i]
+        eigenvalues, eigenvectors = util.compute_PCA(mesh)
+        Ecc = eigenvalues[0] / eigenvalues[2]
+        eccentricity.append(Ecc)
+    return eccentricity
+
+
 if __name__ == '__main__':
     data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=1, returnInfoOnly=False)
     
@@ -135,6 +169,8 @@ if __name__ == '__main__':
     aabbVolume = get_aabbVolume(util_data)
     SurfaceArea2 = o3d_Get_Surface_Area(util_data)
     Volume2 = o3d_Get_Volume(util_data)
+    # Diameter = get_diameter(util_data)
+    Eccentricity = get_eccentricity(util_data)
 
     for i in range(len(Compactness)):
         print("The %dth data feature: " %(i+1))
@@ -142,6 +178,8 @@ if __name__ == '__main__':
         print("Surface Area2:%.5f" %SurfaceArea2[i])
         print("Compactness: %.5f" %Compactness[i])
         print("Axis-aligned bounding-box volume: %.5f" %aabbVolume[i])
+        # print("Diameter: %.5f" %Diameter[i])
+        print("Eccentricity: %.5f" %Eccentricity[i])
 
 
     # for i in range(len(RepairedMesh)):
