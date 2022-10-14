@@ -5,6 +5,7 @@ import util
 from tqdm import tqdm
 import pymeshfix
 import math
+import normalization
 
 def triangle_area(tri):
     # triangle
@@ -20,35 +21,35 @@ def triangle_area(tri):
     return sum(area)
 
 
-def get_SurfaceArea(data):
-    Surface_area = []
+# def get_SurfaceArea(data):
+#     Surface_area = []
 
-    for i in tqdm(range(len(data)), desc="Computing", ncols=100):  # get each shape
-        Area = 0
-        for j in range(len(data[i]['faces'])):  # get each face
-            v_id = data[i]['faces'][j]  # get the vertices of one face
-            v1 = data[i]['vertices'][v_id[0]]
-            v2 = data[i]['vertices'][v_id[1]]
-            v3 = data[i]['vertices'][v_id[2]]
-            Area += triangle_area([v1, v2, v3])  # compute the area of triangle
-        Surface_area.append(Area)
-    return Surface_area
+#     for i in tqdm(range(len(data)), desc="Computing", ncols=100):  # get each shape
+#         Area = 0
+#         for j in range(len(data[i]['faces'])):  # get each face
+#             v_id = data[i]['faces'][j]  # get the vertices of one face
+#             v1 = data[i]['vertices'][v_id[0]]
+#             v2 = data[i]['vertices'][v_id[1]]
+#             v3 = data[i]['vertices'][v_id[2]]
+#             Area += triangle_area([v1, v2, v3])  # compute the area of triangle
+#         Surface_area.append(Area)
+#     return Surface_area
 
 
-def get_Volume(data):
-    volume = []
-    data = hole_stitching(data)
-    for i in range(len(data)):
-        v_total = 0
-        o = util.get_shape_barycenter(data[i])
-        for j in range(len(data[i]['vertices'])):
-            v = data[i]['vertices'][j]
-            v1 = v[0] - o
-            v2 = v[1] - o
-            v3 = v[2] - o
-            v_total += np.linalg.norm(np.cross(v1,v2)*v3)
-        volume.append(v_total/6)
-    return volume
+# def get_Volume(data):
+#     volume = []
+#     data = hole_stitching(data)
+#     for i in range(len(data)):
+#         v_total = 0
+#         o = util.get_shape_barycenter(data[i])
+#         for j in range(len(data[i]['vertices'])):
+#             v = data[i]['vertices'][j]
+#             v1 = v[0] - o
+#             v2 = v[1] - o
+#             v3 = v[2] - o
+#             v_total += np.linalg.norm(np.cross(v1,v2)*v3)
+#         volume.append(v_total/6)
+#     return volume
 
 # only work for certain shapes  https://pymeshfix.pyvista.org/
 def hole_stitching(data):
@@ -79,8 +80,8 @@ def get_Compactness(data):
 
     for i in tqdm(range(len(data)), desc = "Computing", ncols = 100): # get each shape
         comP = 0
-        SurfaceArea = get_SurfaceArea(data)
-        Volume = get_Volume(data)
+        SurfaceArea = o3d_Get_Surface_Area(data)
+        Volume = o3d_Get_Volume(data)
         S_3 = SurfaceArea[i]*SurfaceArea[i]*SurfaceArea[i] # cannot use np.power() here, or the list would transfer to array automatically
         V_2 = Volume[i]*Volume[i]
         comP = S_3/(36*(math.pi)*V_2)
@@ -95,29 +96,50 @@ def get_aabbVolume(data):
     return aabbVolume
 
 
+
+def o3d_Get_Surface_Area(data):
+    # surface_area = mesh.get_surface_area()
+    SA = []
+    for i in range(len(data)):
+        mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(data[i]['vertices']), o3d.cpu.pybind.utility.Vector3iVector(data[i]['faces']))
+        surface_area = o3d.geometry.TriangleMesh.get_surface_area(mesh)
+        # print("Surface Area:")
+        # print(surface_area)
+        SA.append(surface_area)
+    return SA
+
+
+def o3d_Get_Volume(data):
+    V = []
+    for i in range(len(data)):
+        mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(data[i]['vertices']), o3d.cpu.pybind.utility.Vector3iVector(data[i]['faces']))
+        volume = o3d.geometry.TriangleMesh.get_volume(mesh)
+        V.append(volume)
+    return V
+
+
 if __name__ == '__main__':
     data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=1, returnInfoOnly=False)
-
+    
     # get normalized mesh
     util_data = []
     for mesh in data:
         # mesh = util.resampling(mesh)
-        mesh = util.translate_mesh_to_origin(mesh)
-        mesh = util.align_shape(mesh)
-        mesh = util.flipping_test(mesh)
-        mesh = util.scale_mesh_to_unit(mesh)
+        mesh = normalization.translate_mesh_to_origin(mesh)
+        mesh = normalization.align_shape(mesh)
+        mesh = normalization.flipping_test(mesh)
+        mesh = normalization.scale_mesh_to_unit(mesh)
         util_data.append(mesh)
 
-    SurfaceArea = get_SurfaceArea(util_data)
-    Volume = get_Volume(util_data)
     Compactness = get_Compactness(util_data)
     aabbVolume = get_aabbVolume(util_data)
-
+    SurfaceArea2 = o3d_Get_Surface_Area(util_data)
+    Volume2 = o3d_Get_Volume(util_data)
 
     for i in range(len(Compactness)):
         print("The %dth data feature: " %(i+1))
-        print("Volume: %.20f" %Volume[i]) # The volume is too small sometimes
-        print("Surface Area:%.5f" %SurfaceArea[i])
+        print("Volume2: %.20f" %Volume2[i])
+        print("Surface Area2:%.5f" %SurfaceArea2[i])
         print("Compactness: %.5f" %Compactness[i])
         print("Axis-aligned bounding-box volume: %.5f" %aabbVolume[i])
 
