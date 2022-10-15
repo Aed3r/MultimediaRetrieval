@@ -36,21 +36,6 @@ def triangle_area(tri):
 #     return Surface_area
 
 
-# def get_Volume(data):
-#     volume = []
-#     data = hole_stitching(data)
-#     for i in range(len(data)):
-#         v_total = 0
-#         o = util.get_shape_barycenter(data[i])
-#         for j in range(len(data[i]['vertices'])):
-#             v = data[i]['vertices'][j]
-#             v1 = v[0] - o
-#             v2 = v[1] - o
-#             v3 = v[2] - o
-#             v_total += np.linalg.norm(np.cross(v1,v2)*v3)
-#         volume.append(v_total/6)
-#     return volume
-
 # only work for certain shapes  https://pymeshfix.pyvista.org/
 def hole_stitching(data):
     errorNumber = 1
@@ -80,8 +65,8 @@ def get_Compactness(data):
 
     for i in tqdm(range(len(data)), desc = "Computing", ncols = 100): # get each shape
         comP = 0
-        SurfaceArea = o3d_Get_Surface_Area(data)
-        Volume = o3d_Get_Volume(data)
+        SurfaceArea = get_Surface_Area(data)
+        Volume = get_Volume(data)
         S_3 = SurfaceArea[i]*SurfaceArea[i]*SurfaceArea[i] # cannot use np.power() here, or the list would transfer to array automatically
         V_2 = Volume[i]*Volume[i]
         comP = S_3/(36*(math.pi)*V_2)
@@ -97,7 +82,7 @@ def get_aabbVolume(data):
 
 
 
-def o3d_Get_Surface_Area(data):
+def get_Surface_Area(data):
     # surface_area = mesh.get_surface_area()
     SA = []
     for i in range(len(data)):
@@ -109,7 +94,7 @@ def o3d_Get_Surface_Area(data):
     return SA
 
 
-def o3d_Get_Volume(data):
+def get_Volume(data):
     V = []
     for i in range(len(data)):
         mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(data[i]['vertices']), o3d.cpu.pybind.utility.Vector3iVector(data[i]['faces']))
@@ -117,28 +102,32 @@ def o3d_Get_Volume(data):
         V.append(volume)
     return V
 
-
+# Calculate the diameter of a mesh list
+# definition: largest distance between any two surface points in a mesh
 def get_diameter(data):
     Diameter = []
     for i in range(len(data)):
-        distances = []
-        #mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(data[i]['vertices']), o3d.cpu.pybind.utility.Vector3iVector(data[i]['faces']))
         mesh = data[i]
-        #print(np.asarray(mesh['vertices']))
-        print(len(data[i]['vertices']))
-        for j in range(len(mesh['vertices'])): # The calculation is too complex!!!! need to reimplement it
-            for n in range(len(mesh['vertices'])):
-                vertex1 = mesh['vertices'][j]
-                vertex2 = mesh['vertices'][n]
-                print(vertex1)
-                print(vertex2)
-                dist = util.distance_between(vertex1, vertex2)
-                distances.append(dist)
-        # calculate the distance between all 2 vertices
-        # find the maximum
-        diameter = max(distances)
-        Diameter.append(diameter)
+        baryCenter = util.get_shape_barycenter(mesh)
+        print("BaryCenter: ")
+        print(baryCenter)
+        distance_array1 = [] # the array to store all distances between vertex 1 and barycenter
+        for j in range(len(mesh['vertices'])):
+            distance_barycenter_vertex1 = util.distance_between(mesh['vertices'][j], baryCenter)
+            distance_array1.append(distance_barycenter_vertex1)
+        distance1_Maximum = max(distance_array1)    
+        max_index1 = distance_array1.index(distance1_Maximum) # return the index of the maximum value in distances, indicates the index of its vertex
+        vertex1 = mesh['vertices'][max_index1]
+        distance_array2 = [] # the array to store all distances between vertex 1 and vertex 2
+        for n in range(len(mesh['vertices'])):
+            distance_vertex1_vertex2 = util.distance_between(mesh['vertices'][n], vertex1)
+            distance_array2.append(distance_vertex1_vertex2)
+        distance2_Maximum = max(distance_array2)
+        # max_index2 = distance_array2.index(distance2_Maximum)
+        # vertex2 = mesh['vertices'][max_index2]
+    Diameter.append(distance2_Maximum)
     return Diameter
+
 
 # Calculate the eccentricity of a mesh list
 def get_eccentricity(data):
@@ -167,9 +156,9 @@ if __name__ == '__main__':
 
     Compactness = get_Compactness(util_data)
     aabbVolume = get_aabbVolume(util_data)
-    SurfaceArea2 = o3d_Get_Surface_Area(util_data)
-    Volume2 = o3d_Get_Volume(util_data)
-    # Diameter = get_diameter(util_data)
+    SurfaceArea2 = get_Surface_Area(util_data)
+    Volume2 = get_Volume(util_data)
+    Diameter = get_diameter(util_data)
     Eccentricity = get_eccentricity(util_data)
 
     for i in range(len(Compactness)):
@@ -178,18 +167,6 @@ if __name__ == '__main__':
         print("Surface Area2:%.5f" %SurfaceArea2[i])
         print("Compactness: %.5f" %Compactness[i])
         print("Axis-aligned bounding-box volume: %.5f" %aabbVolume[i])
-        # print("Diameter: %.5f" %Diameter[i])
+        print("Diameter: %.5f" %Diameter[i])
         print("Eccentricity: %.5f" %Eccentricity[i])
-
-
-    # for i in range(len(RepairedMesh)):
-    #     mesh = o3d.geometry.TriangleMesh()
-    #     mesh.vertices = o3d.utility.Vector3dVector(RepairedMesh[i]['vertices'])
-    #     mesh.triangles = o3d.utility.Vector3iVector(RepairedMesh[i]['faces'])
-    #     mesh.paint_uniform_color([1, 0.706, 0])
-    #     mesh.compute_vertex_normals()
-    #     o3d.visualization.draw_geometries([mesh])
-
-
-
 
