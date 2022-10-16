@@ -136,7 +136,7 @@ def get_eccentricity(data):
     for i in range(len(data)):
         mesh = data[i]
         eigenvalues, eigenvectors = util.compute_PCA(mesh)
-        Ecc = eigenvalues[0] / eigenvalues[2]
+        Ecc = max(eigenvalues)/min(eigenvalues)
         eccentricity.append(Ecc)
     return eccentricity
 
