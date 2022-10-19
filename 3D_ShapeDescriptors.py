@@ -73,6 +73,8 @@ def get_Compactness(data):
         Compactness.append(comP) 
     return Compactness
 
+
+# Calculate the volume of the axis-aligned bounding box of a mesh in the data list
 def get_aabbVolume(data):
     aabbVolume = []
     for i in range(len(data)):
@@ -81,7 +83,7 @@ def get_aabbVolume(data):
     return aabbVolume
 
 
-
+# Calculate the surface area of a mesh in the data list
 def get_Surface_Area(data):
     # surface_area = mesh.get_surface_area()
     SA = []
@@ -93,7 +95,7 @@ def get_Surface_Area(data):
         SA.append(surface_area)
     return SA
 
-
+# Calculate the volume of meshes in the data list
 def get_Volume(data):
     V = []
     for i in range(len(data)):
@@ -102,6 +104,19 @@ def get_Volume(data):
         V.append(volume)
     return V
 
+# Calculate the 3D rectangularity of meshes in the data list
+def get_3D_Rectangularity(data):
+    OBB_volume = []
+    for i in range(len(data)):
+        # 3D rectangularity: shape volume divided by the volume of the object-aligned bounded box (OBB)
+        shape_volume = get_Volume(data) # return a shape_volume list
+        aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(data[i]['vertices']))
+        OBB = o3d.geometry.AxisAlignedBoundingBox.get_oriented_bounding_box(aabb)
+        OBB_volume.append(OBB.volume())
+        Rectangularity = [s / o for s, o in zip(shape_volume, OBB_volume)]
+    return Rectangularity
+
+
 # Calculate the diameter of a mesh list
 # definition: largest distance between any two surface points in a mesh
 def get_diameter(data):
@@ -109,8 +124,8 @@ def get_diameter(data):
     for i in range(len(data)):
         mesh = data[i]
         baryCenter = util.get_shape_barycenter(mesh)
-        print("BaryCenter: ")
-        print(baryCenter)
+        # print("BaryCenter: ")
+        # print(baryCenter)
         distance_array1 = [] # the array to store all distances between vertex 1 and barycenter
         for j in range(len(mesh['vertices'])):
             distance_barycenter_vertex1 = util.distance_between(mesh['vertices'][j], baryCenter)
@@ -125,7 +140,7 @@ def get_diameter(data):
         distance2_Maximum = max(distance_array2)
         # max_index2 = distance_array2.index(distance2_Maximum)
         # vertex2 = mesh['vertices'][max_index2]
-    Diameter.append(distance2_Maximum)
+        Diameter.append(distance2_Maximum)
     return Diameter
 
 
@@ -156,17 +171,19 @@ if __name__ == '__main__':
 
     Compactness = get_Compactness(util_data)
     aabbVolume = get_aabbVolume(util_data)
-    SurfaceArea2 = get_Surface_Area(util_data)
-    Volume2 = get_Volume(util_data)
+    Rectangularity = get_3D_Rectangularity(util_data)
+    SurfaceArea = get_Surface_Area(util_data)
+    Volume = get_Volume(util_data)
     Diameter = get_diameter(util_data)
     Eccentricity = get_eccentricity(util_data)
 
     for i in range(len(Compactness)):
         print("The %dth data feature: " %(i+1))
-        print("Volume2: %.20f" %Volume2[i])
-        print("Surface Area2:%.5f" %SurfaceArea2[i])
+        print("Volume: %.20f" %Volume[i])
+        print("Surface Area:%.5f" %SurfaceArea[i])
         print("Compactness: %.5f" %Compactness[i])
         print("Axis-aligned bounding-box volume: %.5f" %aabbVolume[i])
-        print("Diameter: %.5f" %Diameter[i])
+        print("3D Rectangularity: %.5f" %Rectangularity[i])
+        print("Diameter: %.5f" %Diameter[i-1])
         print("Eccentricity: %.5f" %Eccentricity[i])
 
