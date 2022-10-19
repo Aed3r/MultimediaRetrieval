@@ -90,11 +90,29 @@ def distance_between(v1, v2):
 
 # Returns the square root of area of triangle given by 3 random vertices
 def triangle_area(v1, v2, v3):
-    a = distance_between(v1, v2)
-    b = distance_between(v2, v3)
-    c = distance_between(v1, v3)
-    s = (a + b + c) / 2
-    return np.sqrt(s * (s - a) * (s - b) * (s - c))
+    return 0.5 * np.linalg.norm(np.cross(v2 - v1, v3 - v1))
+
+# Calculates the cube root of volume of tetrahedron formed by 4 random vertices 
+def tetrahedron_volume(v1, v2, v3, v4):
+    return np.dot(v1 - v4, np.cross(v2 - v4, v3 - v4)) / 6
+
+# Fix holes in the mesh
+def fix_holes(mesh):
+    geometry = o3d.geometry.TriangleMesh()
+    geometry.vertices = o3d.utility.Vector3dVector(mesh["vertices"])
+    geometry.triangles = o3d.utility.Vector3iVector(mesh["faces"])
+    
+    geometry = geometry.compute_convex_hull()
+    geometry = geometry.remove_degenerate_triangles()
+    geometry = geometry.remove_duplicated_triangles()
+    geometry = geometry.remove_duplicated_vertices()
+    geometry = geometry.remove_non_manifold_edges()
+    geometry = geometry.remove_unreferenced_vertices()
+
+    mesh["vertices"] = geometry.vertices
+    mesh["faces"] = geometry.triangles
+
+    return mesh
 
 if __name__ == "__main__":
     import load_meshes
@@ -113,6 +131,31 @@ if __name__ == "__main__":
 
         # Check that the eigenvectors are orthogonal
         assert np.allclose(np.dot(eigenvectors[:, 0], eigenvectors[:, 1]), 0)
+
+    # Test that the angle between 3 vertices is between 0 and pi
+    for i in range(100):
+        v1 = np.random.rand(3)
+        v2 = np.random.rand(3)
+        v3 = np.random.rand(3)
+        assert 0 <= angle_between(v1, v2, v3) <= np.pi
+
+    # Test that the distance between 2 vertices is positive
+    for i in range(100):
+        v1 = np.random.rand(3)
+        v2 = np.random.rand(3)
+        assert distance_between(v1, v2) >= 0
+    
+    # Test that the area of a triangle is positive
+    for i in range(100):
+        v1 = np.random.rand(3)
+        v2 = np.random.rand(3)
+        v3 = np.random.rand(3)
+        assert triangle_area(v1, v2, v3) >= 0
+
+    assert angle_between(np.array([0, 0, 0]), np.array([1, 0, 0]), np.array([0, 1, 0])) == np.pi / 2
+    assert angle_between(np.array([0, 0, 0]), np.array([1, 0, 0]), np.array([0, 0, 1])) == np.pi / 2
+    assert angle_between(np.array([0, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])) == np.pi / 2
+    assert angle_between(np.array([5, 3, 2]), np.array([3, 4, 3]), np.array([5, 6, 5])) == np.pi / 2
 
 
     print("All unit tests passed")
