@@ -114,6 +114,16 @@ def fix_holes(mesh):
 
     return mesh
 
+# Returns the cube root of volume of tetrahedron given by 4 random vertices
+def tetrahedron_volume(v1, v2, v3, v4):
+    # assume the peak point is v4
+    a = v1 - v4
+    b = v2 - v4
+    c = v3 - v4
+    mixed_product = np.dot(a, np.cross(b, c))
+    volume = (np.linalg.norm(mixed_product))/6
+    return np.cbrt(volume)
+
 if __name__ == "__main__":
     import load_meshes
 

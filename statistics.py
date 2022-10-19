@@ -15,7 +15,7 @@ facesData = []
 # this is the function to draw histogram
 def draw_histogram(numberCounts, type):
     
-    plt.hist(numberCounts,bins = 1000) # bins value is the minor interval in histogram x-axis
+    plt.hist2d(numberCounts,bins = 10000)# bins value is the minor interval in histogram x-axis
     if type == 'vertex':
         plt.xlabel('number of vertices')
         #plt.axis([0, 30000, 0, 10]) # x-axis, [0,30000], y-axis, [0,10]
