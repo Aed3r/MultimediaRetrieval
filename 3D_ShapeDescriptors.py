@@ -62,7 +62,6 @@ def hole_stitching(data):
 
 def get_Compactness(data):
     Compactness = []
-
     for i in tqdm(range(len(data)), desc = "Computing", ncols = 100): # get each shape
         comP = 0
         SurfaceArea = get_Surface_Area(data)
@@ -98,6 +97,7 @@ def get_Surface_Area(data):
 # Calculate the volume of meshes in the data list
 def get_Volume(data):
     V = []
+    data = hole_stitching(data)
     for i in range(len(data)):
         mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(data[i]['vertices']), o3d.cpu.pybind.utility.Vector3iVector(data[i]['faces']))
         volume = o3d.geometry.TriangleMesh.get_volume(mesh)
