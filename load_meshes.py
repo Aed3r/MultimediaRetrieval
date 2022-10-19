@@ -112,12 +112,16 @@ def load_OFF (path, returnInfoOnly=False):
     # Calculate the AABB
     aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(vertices))
 
+    # Extract the file name from the path
+    fileName = os.path.basename(path)
+
     result = {
         "path": path, 
         "numVerts": numVerts, 
         "numFaces": numFaces, 
         "faceType": faceType,
-        "aabb": [aabb.get_min_bound()[0], aabb.get_min_bound()[1], aabb.get_min_bound()[2], aabb.get_max_bound()[0], aabb.get_max_bound()[1], aabb.get_max_bound()[2]]}
+        "aabb": [aabb.get_min_bound()[0], aabb.get_min_bound()[1], aabb.get_min_bound()[2], aabb.get_max_bound()[0], aabb.get_max_bound()[1], aabb.get_max_bound()[2]],
+        "name": fileName}
     
     if not returnInfoOnly:
         result["vertices"] = vertices
@@ -229,12 +233,16 @@ def load_PLY (path, returnInfoOnly=False):
     # Calculate the AABB
     aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(vertices))
 
+    # Extract the file name from the path
+    fileName = os.path.basename(path)
+
     result = {
         "path": path, 
         "numVerts": numVerts, 
         "numFaces": numFaces, 
         "faceType": faceType,
-        "aabb": [aabb.get_min_bound()[0], aabb.get_min_bound()[1], aabb.get_min_bound()[2], aabb.get_max_bound()[0], aabb.get_max_bound()[1], aabb.get_max_bound()[2]]}
+        "aabb": [aabb.get_min_bound()[0], aabb.get_min_bound()[1], aabb.get_min_bound()[2], aabb.get_max_bound()[0], aabb.get_max_bound()[1], aabb.get_max_bound()[2]],
+        "name": fileName}
     
     if not returnInfoOnly:
         result["vertices"] = vertices

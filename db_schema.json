@@ -8,6 +8,9 @@
             "path": {
                 "bsonType": "string"
             },
+            "name": {
+                "bsonType": "string"
+            },
             "class": {
                 "bsonType": "string"
             },

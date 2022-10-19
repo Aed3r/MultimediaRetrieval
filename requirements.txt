@@ -2,3 +2,5 @@ open3d==0.15.1
 pymongo==4.2.0
 tqdm==4.64.1
 pyacvd==0.2.8
+pymeshfix==0.16.1
+matplotlib==3.6.0

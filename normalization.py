@@ -70,8 +70,9 @@ def resampling(mesh):
 
     return mesh
 
-def normalize(mesh):
-    mesh = resampling(mesh)
+def normalize(mesh, doResampling=True):
+    if doResampling:
+        mesh = resampling(mesh)
     mesh = translate_mesh_to_origin(mesh)
     mesh = align_shape(mesh)
     mesh = flipping_test(mesh)

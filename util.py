@@ -76,7 +76,10 @@ def get_face_list_from_polydata(mesh: PolyData):
 
 # Returns the amount of requested random vertex from the shape
 def random_vertices(mesh, count):
-    return np.random.choice(np.asarray(mesh["vertices"]), count)
+    # Random number generator from 0 to count
+    random = np.random.randint(0, len(mesh["vertices"]), count)
+    
+    return mesh["vertices"][random]
 
 # Returns the angle between the 3 given vertices
 def angle_between(v1, v2, v3):
@@ -96,26 +99,9 @@ def triangle_area(v1, v2, v3):
 def tetrahedron_volume(v1, v2, v3, v4):
     return np.dot(v1 - v4, np.cross(v2 - v4, v3 - v4)) / 6
 
-# Fix holes in the mesh
-def fix_holes(mesh):
-    geometry = o3d.geometry.TriangleMesh()
-    geometry.vertices = o3d.utility.Vector3dVector(mesh["vertices"])
-    geometry.triangles = o3d.utility.Vector3iVector(mesh["faces"])
-    
-    geometry = geometry.compute_convex_hull()
-    geometry = geometry.remove_degenerate_triangles()
-    geometry = geometry.remove_duplicated_triangles()
-    geometry = geometry.remove_duplicated_vertices()
-    geometry = geometry.remove_non_manifold_edges()
-    geometry = geometry.remove_unreferenced_vertices()
-
-    mesh["vertices"] = geometry.vertices
-    mesh["faces"] = geometry.triangles
-
-    return mesh
 
 # Returns the cube root of volume of tetrahedron given by 4 random vertices
-def tetrahedron_volume(v1, v2, v3, v4):
+def tetrahedron_volume_v2(v1, v2, v3, v4):
     # assume the peak point is v4
     a = v1 - v4
     b = v2 - v4

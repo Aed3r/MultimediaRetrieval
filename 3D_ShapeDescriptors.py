@@ -1,3 +1,5 @@
+import os
+import time
 import load_meshes
 import numpy as np
 import open3d as o3d
@@ -8,6 +10,9 @@ import math
 import util
 import numpy as np
 import normalization
+import matplotlib.pyplot as plt
+
+FEATUREPLOTSPATH = "data/featurePlots/"
 
 def triangle_area(tri):
     # triangle
@@ -95,7 +100,7 @@ def sample2Verts(mesh, func):
         j = 0
         while j < k:
             vj = util.random_vertices(mesh, 1)
-            if (vi == vj):
+            if (set(vi) == set(vj)):
                 continue
 
             res.append(func(vi, vj))
@@ -116,12 +121,12 @@ def sample3Verts(mesh, func):
         j = 0
         while j < k:
             vj = util.random_vertices(mesh, 1)
-            if (vi == vj):
+            if (set(vi) == set(vj)):
                 continue
             l = 0
             while l < k:
                 vl = util.random_vertices(mesh, 1)
-                if (vl == vi or vl == vj):
+                if (set(vl) == set(vi) or set(vl) == set(vj)):
                     continue
 
                 res.append(func(vi, vj, vl))
@@ -143,17 +148,17 @@ def sample4Verts(mesh, func):
         j = 0
         while j < k:
             vj = util.random_vertices(mesh, 1)
-            if (vi == vj):
+            if (set(vi) == set(vj)):
                 continue
             l = 0
             while l < k:
                 vl = util.random_vertices(mesh, 1)
-                if (vl == vi or vl == vj):
+                if (set(vl) == set(vi) or set(vl) == set(vj)):
                     continue
                 m = 0
                 while m < k:
                     vm = util.random_vertices(mesh, 1)
-                    if (vm == vi or vm == vj or vm == vl):
+                    if (set(vm) == set(vi) or set(vm) == set(vj) or set(vm) == set(vl)):
                         continue
 
                     res.append(func(vi, vj, vl, vm))
@@ -162,17 +167,19 @@ def sample4Verts(mesh, func):
             j += 1
         i += 1 
 
+    return res
+
 # Sample the angle of 3 random vertices in the mesh
 def A3(mesh):
     res = sample3Verts(mesh, util.angle_between)
 
     # Calculate histogram of angles
-    histogram, _ = np.histogram(res, bins=25, range=(0, math.pi), density=True)
+    histogram, bins = np.histogram(res, bins=25, range=(0, math.pi), density=True)
     
     # Calculate the mean of the histogram
     histogram = list(histogram / np.sum(histogram))
 
-    return histogram
+    return histogram, bins
 
 # Sample the distance between barycenter and random vertex in the mesh
 def D1(mesh):
@@ -183,48 +190,48 @@ def D1(mesh):
         res.append(util.distance_between(barycenter, np.array(mesh["vertices"][i])))
 
     # Calculate histogram of distances
-    histogram, _ = np.histogram(res, bins=22, range=(0,1), density=True)
+    histogram, bins = np.histogram(res, bins=22, range=(0,1), density=True)
 
     # Calculate the mean of the histogram
     histogram = list(histogram / np.sum(histogram))
 
-    return histogram
+    return histogram, bins
 
 # Sample the distance between two random vertices in the mesh
 def D2(mesh):
     res = sample2Verts(mesh, util.distance_between)
 
     # Calculate histogram of distances
-    histogram, _ = np.histogram(res, bins=23, range=(0, math.sqrt(3)), density=True)
+    histogram, bins = np.histogram(res, bins=23, range=(0, math.sqrt(3)), density=True)
 
     # Calculate the mean of the histogram
     histogram = list(histogram / np.sum(histogram))
 
-    return histogram
+    return histogram, bins
 
 # Sample the square root of area of triangle given by 3 random vertices 
 def D3(mesh):
     res = sample3Verts(mesh, util.triangle_area)
 
     # Calculate histogram of areas
-    histogram, _ = np.histogram(res, bins=25, range=(0, (math.sqrt(3) / 2) ** (1/2) ), density=True)
+    histogram, bins = np.histogram(res, bins=25, range=(0, (math.sqrt(3) / 2) ** (1/2) ), density=True)
 
     # Calculate the mean of the histogram
     histogram = list(histogram / np.sum(histogram))
 
-    return histogram
+    return histogram, bins
 
 # Sample the cube root of volume of tetrahedron formed by 4 random vertices 
 def D4(mesh):
     res = sample4Verts(mesh, util.tetrahedron_volume)
 
     # Calculate histogram of volumes
-    histogram, _ = np.histogram(res, bins=29, range=(0,(1/3) ** (1/3)), density=True)
+    histogram, bins = np.histogram(res, bins=29, range=(0,(1/3) ** (1/3)), density=True)
 
     # Calculate the mean of the histogram
     histogram = list(histogram / np.sum(histogram))
 
-    return histogram
+    return histogram, bins
 
 
 # Calculate the surface area of a mesh in the data list
@@ -300,6 +307,65 @@ def get_eccentricity(data):
         eccentricity.append(Ecc)
     return eccentricity
 
+def genFeaturePlots():
+    meshes = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=-1, returnInfoOnly=False)
+    features = {}
+
+    print("Generating feature plots...")
+    startTime = time.time()
+
+    for i in tqdm(range(len(meshes)), desc="Normalizing meshes", ncols=150):
+        meshes[i] = normalization.normalize(meshes[i], doResampling=False)
+
+    features["A3"] = {}
+    for i in tqdm(range(len(meshes)), desc="Calculating A3 shape descriptor", ncols=150):
+        meshClass = meshes[i]["class"]
+        if meshClass not in features["A3"]:
+            features["A3"][meshClass] = {}
+
+        features["A3"][meshClass][meshes[i]["name"]] = A3(meshes[i])
+
+    features["D2"] = {}
+    for i in tqdm(range(len(meshes)), desc="Calculating D2 shape descriptor", ncols=150):
+        meshClass = meshes[i]["class"]
+        if meshClass not in features["D2"]:
+            features["D2"][meshClass] = {}
+        
+        features["D2"][meshClass][meshes[i]["name"]] = D2(meshes[i])
+
+    features["D3"] = {}
+    for i in tqdm(range(len(meshes)), desc="Calculating D3 shape descriptor", ncols=150):
+        meshClass = meshes[i]["class"]
+        if meshClass not in features["D3"]:
+            features["D3"][meshClass] = {}
+        
+        features["D3"][meshClass][meshes[i]["name"]] = D3(meshes[i])
+
+    features["D4"] = {}
+    for i in tqdm(range(len(meshes)), desc="Calculating D4 shape descriptor", ncols=150):
+        meshClass = meshes[i]["class"]
+        if meshClass not in features["D4"]:
+            features["D4"][meshClass] = {}
+        
+        features["D4"][meshClass][meshes[i]["name"]] = D4(meshes[i])
+
+    for descriptor in tqdm(features, desc="Generating plots", ncols=150):
+        # Verify that the save location exists
+        saveLocation = os.path.join(FEATUREPLOTSPATH, descriptor)
+        if not os.path.exists(saveLocation):
+            os.makedirs(saveLocation)
+
+        for shapeClass in features[descriptor]:
+            plt.figure()
+            plt.title(f"{descriptor} shape descriptor for the '{shapeClass}' shape class")
+            for shape in features[descriptor][shapeClass]:
+                feature = features[descriptor][shapeClass][shape]
+                plt.plot(feature[1][:-1], feature[0])
+
+            plt.savefig(os.path.join(saveLocation, f"{shapeClass}.png"))
+            plt.close()
+    
+    print(f"Feature plots generated in {time.time() - startTime} seconds")
 
 if __name__ == '__main__':
     data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=1, returnInfoOnly=False)
@@ -307,7 +373,7 @@ if __name__ == '__main__':
     # get normalized mesh
     util_data = []
     for mesh in data:
-        util_data.append(normalization.normalize_mesh(mesh))
+        util_data.append(normalization.normalize(mesh))
 
     Compactness = get_Compactness(util_data)
     aabbVolume = get_aabbVolume(util_data)
@@ -326,4 +392,6 @@ if __name__ == '__main__':
         print("3D Rectangularity: %.5f" %Rectangularity[i])
         print("Diameter: %.5f" %Diameter[i-1])
         print("Eccentricity: %.5f" %Eccentricity[i])
+
+    genFeaturePlots()
 
