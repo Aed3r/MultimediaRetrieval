@@ -55,7 +55,7 @@ class MMRVISUALIZER:
 
         # Normalized mesh
         self._norm_mesh = self._mesh.copy()
-        self._normalizationSteps = ["None", "Remeshed", "Translated", "Posed", "Flipped", "Scaled"]
+        self._normalizationSteps = ["None", "Remeshed", "Centered", "Aligned", "Flipped", "Scaled"]
         self._normalizationStep = 0
 
         # Set lighting
