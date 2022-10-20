@@ -325,6 +325,14 @@ def genFeaturePlots():
 
         features["A3"][meshClass][meshes[i]["name"]] = A3(meshes[i])
 
+    features["D1"] = {}
+    for i in tqdm(range(len(meshes)), desc="Calculating D1 shape descriptor", ncols=150):
+        meshClass = meshes[i]["class"]
+        if meshClass not in features["D1"]:
+            features["D1"][meshClass] = {}
+
+        features["D1"][meshClass][meshes[i]["name"]] = D1(meshes[i])
+
     features["D2"] = {}
     for i in tqdm(range(len(meshes)), desc="Calculating D2 shape descriptor", ncols=150):
         meshClass = meshes[i]["class"]
