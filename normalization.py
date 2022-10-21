@@ -1,3 +1,4 @@
+import imp
 from util import *
 
 # Translates the shape to the given position and returns the result
@@ -81,13 +82,18 @@ def normalize(mesh, doResampling=True):
 
 if __name__ == "__main__":
     import load_meshes
+    import statistics
 
     # Test all normalization functions
 
-    # Load 100 random meshes
-    meshes = load_meshes.get_meshes(fromLPSB=True, fromPRIN=True, randomSample=100, returnInfoOnly=False)
-
+    # load all 380 meshes in LPSB
+    meshes = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=-1, returnInfoOnly=False)
+    barycenters_0 = []
+    barycenters_1 = []
     for mesh in meshes:
+        # check the barycenter histogram before centering 
+        barycenter_0 = get_shape_barycenter(mesh)
+        barycenters_0.append(barycenter_0)
         # Translate the mesh to the origin
         mesh = translate_mesh_to_origin(mesh)
 
@@ -97,17 +103,29 @@ if __name__ == "__main__":
         # Check that the barycenter is at the origin
         assert np.allclose(barycenter, np.zeros(3))
 
-        # Scale to unit cube
-        mesh = scale_mesh_to_unit(mesh)
+        # check the barycenter histogram after centering
+        barycenters_1.append(barycenter) # barycenters list
+    statistics.draw_histogram([i[0] for i in barycenters_0], 'centering') # histogram before centering- check x axis
+    statistics.draw_histogram([i[0] for i in barycenters_1], 'centering') # histogram after centering   
+    statistics.draw_histogram([i[1] for i in barycenters_0], 'centering') # histogram before centering- check y axis
+    statistics.draw_histogram([i[1] for i in barycenters_1], 'centering') # histogram after centering   
+    statistics.draw_histogram([i[2] for i in barycenters_0], 'centering') # histogram before centering- check z axis
+    statistics.draw_histogram([i[2] for i in barycenters_1], 'centering') # histogram after centering   
+    print (barycenters_0)
+    print(barycenters_1)  
 
-        # Check that the max distance from the origin is 1
-        assert np.allclose(np.max(np.linalg.norm(np.asarray(mesh["vertices"]), axis=1)), 1)
+    print("Centering tests passed")
+        # # Scale to unit cube
+        # mesh = scale_mesh_to_unit(mesh)
 
-        # Align the mesh
-        mesh = align_shape(mesh)
+        # # Check that the max distance from the origin is 1
+        # assert np.allclose(np.max(np.linalg.norm(np.asarray(mesh["vertices"]), axis=1)), 1)
 
-        # Perform the flipping test
-        mesh = flipping_test(mesh)
+        # # Align the mesh
+        # mesh = align_shape(mesh)
+
+        # # Perform the flipping test
+        # mesh = flipping_test(mesh)
 
 
     print("All unit tests passed")

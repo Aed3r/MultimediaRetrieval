@@ -60,8 +60,8 @@ def Stat(r_meshes):
     rm = r_meshes.find()
     LDB_verticesData = []
     LDB_facesData = []
-    PSB_verticesData = []
-    PSB_facesData = []
+    # PSB_verticesData = []
+    # PSB_facesData = []
     rm_data = []
 
     # get vertices and faces number in remeshed database
@@ -80,17 +80,17 @@ def Stat(r_meshes):
     # show statistics of remeshed database
     statistics.draw_histogram(LDB_verticesData, 'vertex')
     statistics.draw_histogram(LDB_facesData, 'face')
-    statistics.draw_histogram(PSB_verticesData, 'vertex')
-    statistics.draw_histogram(PSB_verticesData, 'face')
+    # statistics.draw_histogram(PSB_verticesData, 'vertex')
+    # statistics.draw_histogram(PSB_verticesData, 'face')
 
-    statistics.save_Excel(rm_data, 'remeshed_PSB')  # save to Excel
+    statistics.save_Excel(rm_data, 'remeshed_LDB')  # save to Excel
 
 
 if __name__ == '__main__':
     # get mesh from database
     # NOTICE: To test the function, change randomSample to a small number!  Use -1 to load all meshes.
     # this seems strange, maybe we should take data from the database?
-    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=True, randomSample=5, returnInfoOnly=True)
+    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=-1, returnInfoOnly=True)
     data_new = []                               # store remeshed data
 
     db = MongoClient("mongodb://localhost:27017/")['mmr']
@@ -118,4 +118,4 @@ if __name__ == '__main__':
             except pymongo.errors.DuplicateKeyError:
                 print('duplicate mesh found and ignored')
 
-    # Stat(r_meshes)                                # show statistics
+    Stat(r_meshes)                                # show statistics
