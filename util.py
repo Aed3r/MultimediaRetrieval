@@ -94,15 +94,19 @@ def distance_between(v1, v2):
 
 # Returns the square root of area of triangle given by 3 random vertices
 def triangle_area(v1, v2, v3):
-    return 0.5 * np.linalg.norm(np.cross(v2 - v1, v3 - v1))
+    a = np.linalg.norm(v1 - v2)
+    b = np.linalg.norm(v2 - v3)
+    c = np.linalg.norm(v3 - v1)
+    s = (a + b + c) / 2
+    return np.sqrt(s * (s - a) * (s - b) * (s - c))
 
 # Calculates the cube root of volume of tetrahedron formed by 4 random vertices 
-def tetrahedron_volume(v1, v2, v3, v4):
+def tetrahedron_volume_v2(v1, v2, v3, v4):
     return np.dot(v1 - v4, np.cross(v2 - v4, v3 - v4)) / 6
 
 
 # Returns the cube root of volume of tetrahedron given by 4 random vertices
-def tetrahedron_volume_v2(v1, v2, v3, v4):
+def tetrahedron_volume(v1, v2, v3, v4):
     # assume the peak point is v4
     a = v1 - v4
     b = v2 - v4
