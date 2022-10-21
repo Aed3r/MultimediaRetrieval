@@ -15,13 +15,15 @@ facesData = []
 # this is the function to draw histogram
 def draw_histogram(numberCounts, type):
     
-    plt.hist2d(numberCounts,bins = 10000)# bins value is the minor interval in histogram x-axis
+    plt.hist(numberCounts,bins = 10)# bins value is the minor interval in histogram x-axis
     if type == 'vertex':
         plt.xlabel('number of vertices')
         #plt.axis([0, 30000, 0, 10]) # x-axis, [0,30000], y-axis, [0,10]
     elif type == 'face':
         plt.xlabel('number of faces')
         #plt.axis([0, 40000, 0, 25])
+    elif type == 'centering':
+        plt.xlabel('barycenter coordinates')
     plt.ylabel('frequency')
     plt.title('Histogram')
     plt.show()

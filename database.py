@@ -105,7 +105,7 @@ def main():
     dbmngr = DatabaseManager()
 
     # Load the data
-    data = load_meshes.get_meshes(fromLPSB=False, fromPRIN=True, randomSample=-1, returnInfoOnly=True)
+    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=-1, returnInfoOnly=True)
 
     # Insert the data into the db
     dbmngr.insert_data(data)
