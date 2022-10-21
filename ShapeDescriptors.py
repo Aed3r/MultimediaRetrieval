@@ -315,7 +315,6 @@ if __name__ == '__main__':
     #util_data.append(normalization.normalize(mesh))
 
     Compactness = []
-    aabbVolume = []
     Rectangularity = []
     SurfaceArea = []
     Volume = []
