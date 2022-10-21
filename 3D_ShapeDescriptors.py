@@ -96,10 +96,10 @@ def sample2Verts(mesh, func):
     i = 0
     while i < k:
         # Get random number from 0 to n
-        vi = util.random_vertices(mesh, 1)
+        vi = util.random_vertices(mesh, 1)[0]
         j = 0
         while j < k:
-            vj = util.random_vertices(mesh, 1)
+            vj = util.random_vertices(mesh, 1)[0]
             if (set(vi) == set(vj)):
                 continue
 
@@ -117,15 +117,15 @@ def sample3Verts(mesh, func):
     i = 0
     while i < k:
         # Get random number from 0 to n
-        vi = util.random_vertices(mesh, 1)
+        vi = util.random_vertices(mesh, 1)[0]
         j = 0
         while j < k:
-            vj = util.random_vertices(mesh, 1)
+            vj = util.random_vertices(mesh, 1)[0]
             if (set(vi) == set(vj)):
                 continue
             l = 0
             while l < k:
-                vl = util.random_vertices(mesh, 1)
+                vl = util.random_vertices(mesh, 1)[0]
                 if (set(vl) == set(vi) or set(vl) == set(vj)):
                     continue
 
@@ -144,20 +144,20 @@ def sample4Verts(mesh, func):
     i = 0
     while i < k:
         # Get random number from 0 to n
-        vi = util.random_vertices(mesh, 1)
+        vi = util.random_vertices(mesh, 1)[0]
         j = 0
         while j < k:
-            vj = util.random_vertices(mesh, 1)
+            vj = util.random_vertices(mesh, 1)[0]
             if (set(vi) == set(vj)):
                 continue
             l = 0
             while l < k:
-                vl = util.random_vertices(mesh, 1)
+                vl = util.random_vertices(mesh, 1)[0]
                 if (set(vl) == set(vi) or set(vl) == set(vj)):
                     continue
                 m = 0
                 while m < k:
-                    vm = util.random_vertices(mesh, 1)
+                    vm = util.random_vertices(mesh, 1)[0]
                     if (set(vm) == set(vi) or set(vm) == set(vj) or set(vm) == set(vl)):
                         continue
 

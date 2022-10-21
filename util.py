@@ -74,12 +74,13 @@ def get_face_list_from_polydata(mesh: PolyData):
     faces = np.array(np.split(c, o[1:-1]))         # Convering an array(dtype = int64) to a list
     return faces
 
-# Returns the amount of requested random vertex from the shape
+# Returns the amount of requested random vertices from the shape
 def random_vertices(mesh, count):
-    # Random number generator from 0 to count
-    random = np.random.randint(0, len(mesh["vertices"]), count)
-    
-    return mesh["vertices"][random]
+    res = []
+    for i in range(count):
+        random = np.random.randint(0, len(mesh["vertices"]))
+        res.append(mesh["vertices"][random])
+    return res
 
 # Returns the angle between the 3 given vertices
 def angle_between(v1, v2, v3):
