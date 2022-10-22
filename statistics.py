@@ -24,6 +24,16 @@ def draw_histogram(numberCounts, type):
         #plt.axis([0, 40000, 0, 25])
     elif type == 'centering':
         plt.xlabel('barycenter coordinates')
+    elif type == 'diameter':
+        plt.xlabel('value of diameter')
+    elif type == 'compactness':
+        plt.xlabel('value of compactness')
+    elif type == 'surfaceArea':
+        plt.xlabel('surface area')
+    elif type == ('Eccentricity'):
+        plt.xlabel('eccentricity')
+    elif type == ('OBBVolume'):
+        plt.xlabel('OBB volume')
     plt.ylabel('frequency')
     plt.title('Histogram')
     plt.show()
@@ -52,7 +62,7 @@ if __name__ == '__main__':
     
     # draw the histogram
     draw_histogram(verticesData, 'vertex')
-    draw_histogram(facesData, 'face')
+    draw_histogram(facesData, 'face') 
 
     # Export to an excel sheet
     #save_Excel(data, 'Princeton')
