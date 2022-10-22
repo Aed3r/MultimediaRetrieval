@@ -34,6 +34,8 @@ def draw_histogram(numberCounts, type):
         plt.xlabel('eccentricity')
     elif type == ('OBBVolume'):
         plt.xlabel('OBB volume')
+    elif type == ('volume'):
+        plt.xlabel('volume of mesh')
     plt.ylabel('frequency')
     plt.title('Histogram')
     plt.show()
