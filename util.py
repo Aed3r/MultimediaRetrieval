@@ -74,12 +74,13 @@ def get_face_list_from_polydata(mesh: PolyData):
     faces = np.array(np.split(c, o[1:-1]))         # Convering an array(dtype = int64) to a list
     return faces
 
-# Returns the amount of requested random vertex from the shape
+# Returns the amount of requested random vertices from the shape
 def random_vertices(mesh, count):
-    # Random number generator from 0 to count
-    random = np.random.randint(0, len(mesh["vertices"]), count)
-    
-    return mesh["vertices"][random]
+    res = []
+    for i in range(count):
+        random = np.random.randint(0, len(mesh["vertices"]))
+        res.append(mesh["vertices"][random])
+    return res
 
 # Returns the angle between the 3 given vertices
 def angle_between(v1, v2, v3):
@@ -93,15 +94,19 @@ def distance_between(v1, v2):
 
 # Returns the square root of area of triangle given by 3 random vertices
 def triangle_area(v1, v2, v3):
-    return 0.5 * np.linalg.norm(np.cross(v2 - v1, v3 - v1))
+    a = np.linalg.norm(v1 - v2)
+    b = np.linalg.norm(v2 - v3)
+    c = np.linalg.norm(v3 - v1)
+    s = (a + b + c) / 2
+    return np.sqrt(s * (s - a) * (s - b) * (s - c))
 
 # Calculates the cube root of volume of tetrahedron formed by 4 random vertices 
-def tetrahedron_volume(v1, v2, v3, v4):
+def tetrahedron_volume_v2(v1, v2, v3, v4):
     return np.dot(v1 - v4, np.cross(v2 - v4, v3 - v4)) / 6
 
 
 # Returns the cube root of volume of tetrahedron given by 4 random vertices
-def tetrahedron_volume_v2(v1, v2, v3, v4):
+def tetrahedron_volume(v1, v2, v3, v4):
     # assume the peak point is v4
     a = v1 - v4
     b = v2 - v4

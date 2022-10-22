@@ -71,9 +71,10 @@ def resampling(mesh):
 
     return mesh
 
-def normalize(mesh, doResampling=True):
-    if doResampling:
-        mesh = resampling(mesh)
+def normalize(mesh):    #doResampling=True
+    #if doResampling:
+    if int(mesh['numVerts']) < 500 or mesh['numVerts'] > 50000:
+         mesh = resampling(mesh)
     mesh = translate_mesh_to_origin(mesh)
     mesh = align_shape(mesh)
     mesh = flipping_test(mesh)

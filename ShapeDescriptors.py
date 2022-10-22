@@ -1,9 +1,7 @@
 import os
 import time
 import load_meshes
-import numpy as np
 import open3d as o3d
-import util
 from tqdm import tqdm
 import pymeshfix
 import math
@@ -14,79 +12,83 @@ import matplotlib.pyplot as plt
 
 FEATUREPLOTSPATH = "data/featurePlots/"
 
-def triangle_area(tri):
-    # triangle
-    if isinstance(tri, list):
-        tri = np.array(tri)
-    # all edges
-    edges = tri[1:] - tri[0:1]  # v1-v0, v2-v0
-    # row wise cross product
-    cross_product = np.cross(edges[:-1], edges[1:], axis=1)  # (v1-v0) X (v2-v0)
-    # area of all triangles
-    area = np.linalg.norm(cross_product, axis=1) / 2  # compute the area
-
-    return sum(area)
-
-
-# def get_SurfaceArea(data):
-#     Surface_area = []
-
-#     for i in tqdm(range(len(data)), desc="Computing", ncols=100):  # get each shape
-#         Area = 0
-#         for j in range(len(data[i]['faces'])):  # get each face
-#             v_id = data[i]['faces'][j]  # get the vertices of one face
-#             v1 = data[i]['vertices'][v_id[0]]
-#             v2 = data[i]['vertices'][v_id[1]]
-#             v3 = data[i]['vertices'][v_id[2]]
-#             Area += triangle_area([v1, v2, v3])  # compute the area of triangle
-#         Surface_area.append(Area)
-#     return Surface_area
-
+# Calculate the surface area of a mesh in the data list
+def get_Surface_Area(data):
+    mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(data['vertices']), o3d.cpu.pybind.utility.Vector3iVector(data['faces']))
+    surface_area = o3d.geometry.TriangleMesh.get_surface_area(mesh)
+    return surface_area
 
 # only work for certain shapes  https://pymeshfix.pyvista.org/
 def hole_stitching(data):
     errorNumber = 1
-    for i in range(len(data)):
-        # Create object from vertex and face arrays
-        vertices = np.asarray(data[i]['vertices'])
-        faces = data[i]['faces']
+    vertices = np.asarray(data['vertices'])
+    faces = data['faces']
 
-        try:
-            meshfix = pymeshfix.MeshFix(vertices, faces)
-            # meshfix.plot()      # Plot input
-            # Repair input mesh
-            meshfix.repair(verbose=True)
-            # meshfix.plot()      # View the repaired mesh (requires vtkInterface)
-            # Access the repaired mesh with vtk
-            data[i]['vertices'] = meshfix.v
-            data[i]['faces'] = meshfix.f
-        except:
-            print('Not suitable' + errorNumber)
-            errorNumber += 1
+    try:
+        meshfix = pymeshfix.MeshFix(vertices, faces)
+        # meshfix.plot()      # Plot input
+        # Repair input mesh
+        meshfix.repair(verbose=True)
+        # meshfix.plot()      # View the repaired mesh (requires vtkInterface)
+        # Access the repaired mesh with vtk
+        data['vertices'] = meshfix.v
+        data['faces'] = meshfix.f
+    except:
+        print('Not suitable' + errorNumber)
+        errorNumber += 1
 
     return data
 
+# Calculate the volume of meshes in the data list
+def get_Volume(data):
+    data = hole_stitching(data)
+    mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(data['vertices']), o3d.cpu.pybind.utility.Vector3iVector(data['faces']))
+    volume = o3d.geometry.TriangleMesh.get_volume(mesh)
+    return volume
 
 def get_Compactness(data):
-    Compactness = []
-    for i in tqdm(range(len(data)), desc = "Computing", ncols = 100): # get each shape
-        comP = 0
-        SurfaceArea = get_Surface_Area(data)
-        Volume = get_Volume(data)
-        S_3 = SurfaceArea[i]*SurfaceArea[i]*SurfaceArea[i] # cannot use np.power() here, or the list would transfer to array automatically
-        V_2 = Volume[i]*Volume[i]
-        comP = S_3/(36*(math.pi)*V_2)
-        Compactness.append(comP) 
-    return Compactness
+    SurfaceArea = get_Surface_Area(data)
+    Volume = get_Volume(data)
+    S_3 = SurfaceArea * SurfaceArea * SurfaceArea  # cannot use np.power() here, or the list would transfer to array automatically
+    V_2 = Volume * Volume
+    comP = S_3 / (36 * (math.pi) * V_2)
+    return comP
 
+# Calculate the 3D rectangularity of meshes in the data list
+def get_3D_Rectangularity(data):
+    shape_volume = get_Volume(data) # return a shape_volume list
+    aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(data['vertices']))
+    OBB = o3d.geometry.AxisAlignedBoundingBox.get_oriented_bounding_box(aabb)
+    Rectangularity = shape_volume/OBB.volume()
+    return Rectangularity
 
-# Calculate the volume of the axis-aligned bounding box of a mesh in the data list
-def get_aabbVolume(data):
-    aabbVolume = []
-    for i in range(len(data)):
-        aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(data[i]['vertices']))
-        aabbVolume.append(aabb.volume())
-    return aabbVolume
+# Calculate the diameter of a mesh list
+# definition: largest distance between any two surface points in a mesh
+def get_diameter(data):
+    mesh = data
+    baryCenter = util.get_shape_barycenter(mesh)
+
+    distance_array1 = [] # the array to store all distances between vertex 1 and barycenter
+    for j in range(len(mesh['vertices'])):
+        distance_barycenter_vertex1 = util.distance_between(mesh['vertices'][j], baryCenter)
+        distance_array1.append(distance_barycenter_vertex1)
+    distance1_Maximum = max(distance_array1)
+    max_index1 = distance_array1.index(distance1_Maximum) # return the index of the maximum value in distances, indicates the index of its vertex
+    vertex1 = mesh['vertices'][max_index1]
+    distance_array2 = [] # the array to store all distances between vertex 1 and vertex 2
+    for n in range(len(mesh['vertices'])):
+        distance_vertex1_vertex2 = util.distance_between(mesh['vertices'][n], vertex1)
+        distance_array2.append(distance_vertex1_vertex2)
+    distance2_Maximum = max(distance_array2)
+
+    return distance2_Maximum
+
+# Calculate the eccentricity of a mesh list
+def get_eccentricity(data):
+    mesh = data
+    eigenvalues, eigenvectors = util.compute_PCA(mesh)
+    Ecc = max(eigenvalues)/min(eigenvalues)
+    return Ecc
 
 # Runs the sampling function func for 2 vertices
 def sample2Verts(mesh, func):
@@ -96,10 +98,10 @@ def sample2Verts(mesh, func):
     i = 0
     while i < k:
         # Get random number from 0 to n
-        vi = util.random_vertices(mesh, 1)
+        vi = util.random_vertices(mesh, 1)[0]
         j = 0
         while j < k:
-            vj = util.random_vertices(mesh, 1)
+            vj = util.random_vertices(mesh, 1)[0]
             if (set(vi) == set(vj)):
                 continue
 
@@ -117,15 +119,15 @@ def sample3Verts(mesh, func):
     i = 0
     while i < k:
         # Get random number from 0 to n
-        vi = util.random_vertices(mesh, 1)
+        vi = util.random_vertices(mesh, 1)[0]
         j = 0
         while j < k:
-            vj = util.random_vertices(mesh, 1)
+            vj = util.random_vertices(mesh, 1)[0]
             if (set(vi) == set(vj)):
                 continue
             l = 0
             while l < k:
-                vl = util.random_vertices(mesh, 1)
+                vl = util.random_vertices(mesh, 1)[0]
                 if (set(vl) == set(vi) or set(vl) == set(vj)):
                     continue
 
@@ -144,20 +146,20 @@ def sample4Verts(mesh, func):
     i = 0
     while i < k:
         # Get random number from 0 to n
-        vi = util.random_vertices(mesh, 1)
+        vi = util.random_vertices(mesh, 1)[0]
         j = 0
         while j < k:
-            vj = util.random_vertices(mesh, 1)
+            vj = util.random_vertices(mesh, 1)[0]
             if (set(vi) == set(vj)):
                 continue
             l = 0
             while l < k:
-                vl = util.random_vertices(mesh, 1)
+                vl = util.random_vertices(mesh, 1)[0]
                 if (set(vl) == set(vi) or set(vl) == set(vj)):
                     continue
                 m = 0
                 while m < k:
-                    vm = util.random_vertices(mesh, 1)
+                    vm = util.random_vertices(mesh, 1)[0]
                     if (set(vm) == set(vi) or set(vm) == set(vj) or set(vm) == set(vl)):
                         continue
 
@@ -234,79 +236,6 @@ def D4(mesh):
     return histogram, bins
 
 
-# Calculate the surface area of a mesh in the data list
-def get_Surface_Area(data):
-    # surface_area = mesh.get_surface_area()
-    SA = []
-    for i in range(len(data)):
-        mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(data[i]['vertices']), o3d.cpu.pybind.utility.Vector3iVector(data[i]['faces']))
-        surface_area = o3d.geometry.TriangleMesh.get_surface_area(mesh)
-        # print("Surface Area:")
-        # print(surface_area)
-        SA.append(surface_area)
-    return SA
-
-# Calculate the volume of meshes in the data list
-def get_Volume(data):
-    V = []
-    data = hole_stitching(data)
-    for i in range(len(data)):
-        mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(data[i]['vertices']), o3d.cpu.pybind.utility.Vector3iVector(data[i]['faces']))
-        volume = o3d.geometry.TriangleMesh.get_volume(mesh)
-        V.append(volume)
-    return V
-
-# Calculate the 3D rectangularity of meshes in the data list
-def get_3D_Rectangularity(data):
-    OBB_volume = []
-    for i in range(len(data)):
-        # 3D rectangularity: shape volume divided by the volume of the object-aligned bounded box (OBB)
-        shape_volume = get_Volume(data) # return a shape_volume list
-        aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(data[i]['vertices']))
-        OBB = o3d.geometry.AxisAlignedBoundingBox.get_oriented_bounding_box(aabb)
-        OBB_volume.append(OBB.volume())
-        Rectangularity = [s / o for s, o in zip(shape_volume, OBB_volume)]
-    return Rectangularity
-
-
-# Calculate the diameter of a mesh list
-# definition: largest distance between any two surface points in a mesh
-def get_diameter(data):
-    Diameter = []
-    for i in range(len(data)):
-        mesh = data[i]
-        baryCenter = util.get_shape_barycenter(mesh)
-        # print("BaryCenter: ")
-        # print(baryCenter)
-        distance_array1 = [] # the array to store all distances between vertex 1 and barycenter
-        for j in range(len(mesh['vertices'])):
-            distance_barycenter_vertex1 = util.distance_between(mesh['vertices'][j], baryCenter)
-            distance_array1.append(distance_barycenter_vertex1)
-        distance1_Maximum = max(distance_array1)    
-        max_index1 = distance_array1.index(distance1_Maximum) # return the index of the maximum value in distances, indicates the index of its vertex
-        vertex1 = mesh['vertices'][max_index1]
-        distance_array2 = [] # the array to store all distances between vertex 1 and vertex 2
-        for n in range(len(mesh['vertices'])):
-            distance_vertex1_vertex2 = util.distance_between(mesh['vertices'][n], vertex1)
-            distance_array2.append(distance_vertex1_vertex2)
-        distance2_Maximum = max(distance_array2)
-        # max_index2 = distance_array2.index(distance2_Maximum)
-        # vertex2 = mesh['vertices'][max_index2]
-        Diameter.append(distance2_Maximum)
-    return Diameter
-
-
-# Calculate the eccentricity of a mesh list
-def get_eccentricity(data):
-    #Eccentricity = eigenvalue1 / eigenvalue3
-    eccentricity = []
-    for i in range(len(data)):
-        mesh = data[i]
-        eigenvalues, eigenvectors = util.compute_PCA(mesh)
-        Ecc = max(eigenvalues)/min(eigenvalues)
-        eccentricity.append(Ecc)
-    return eccentricity
-
 def genFeaturePlots():
     meshes = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=-1, returnInfoOnly=False)
     features = {}
@@ -376,30 +305,37 @@ def genFeaturePlots():
     print(f"Feature plots generated in {time.time() - startTime} seconds")
 
 if __name__ == '__main__':
-    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=1, returnInfoOnly=False)
-    
+    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=2, returnInfoOnly=False)
+    #data = 'data/LabeledDB_new/Bird/256.off'
+    #mesh = load_meshes.load_OFF(data)
     # get normalized mesh
     util_data = []
     for mesh in data:
         util_data.append(normalization.normalize(mesh))
+    #util_data.append(normalization.normalize(mesh))
 
-    Compactness = get_Compactness(util_data)
-    aabbVolume = get_aabbVolume(util_data)
-    Rectangularity = get_3D_Rectangularity(util_data)
-    SurfaceArea = get_Surface_Area(util_data)
-    Volume = get_Volume(util_data)
-    Diameter = get_diameter(util_data)
-    Eccentricity = get_eccentricity(util_data)
+    Compactness = []
+    Rectangularity = []
+    SurfaceArea = []
+    Volume = []
+    Diameter = []
+    Eccentricity = []
+    for i in range(len(util_data)):
+        Volume.append(get_Volume(util_data[i]))
+        SurfaceArea.append(get_Surface_Area(util_data[i]))
+        Compactness.append(get_Compactness(util_data[i]))
+        Rectangularity.append(get_3D_Rectangularity(util_data[i]))
+        Diameter.append(get_diameter(util_data[i]))
+        Eccentricity.append(get_eccentricity(util_data[i]))
 
-    for i in range(len(Compactness)):
+    for i in range(len(util_data)):
         print("The %dth data feature: " %(i+1))
         print("Volume: %.20f" %Volume[i])
-        print("Surface Area:%.5f" %SurfaceArea[i])
+        print("Surface Area: %.5f" %SurfaceArea[i])
         print("Compactness: %.5f" %Compactness[i])
-        print("Axis-aligned bounding-box volume: %.5f" %aabbVolume[i])
-        print("3D Rectangularity: %.5f" %Rectangularity[i])
-        print("Diameter: %.5f" %Diameter[i-1])
+        print("Rectangularity: %.5f" %Rectangularity[i])
+        print("Diameter: %.5f" %Diameter[i])
         print("Eccentricity: %.5f" %Eccentricity[i])
 
-    genFeaturePlots()
+    #genFeaturePlots()
 
