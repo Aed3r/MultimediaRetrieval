@@ -48,7 +48,7 @@ def save_Excel(dataset, filename):
 if __name__ == '__main__':
     # load the data
     # data = load_meshes.get_meshes(fromLPSB=False, fromPRIN=True, randomSample=-1, returnInfoOnly=True)
-    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=-1, returnInfoOnly=True)
+    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, fromNORM=False, randomSample=-1, returnInfoOnly=True)
     print(data)
     print(type(data)) # list
     print(data[1])

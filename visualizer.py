@@ -322,7 +322,7 @@ def main():
         else:
             raise Exception("File format not supported")
     else:
-        mesh = load_meshes.get_meshes(True, True, 1, False)[0]
+        mesh = load_meshes.get_meshes(fromLPSB=True, fromPRIN=True, fromNORM=False, randomSample=1, returnInfoOnly=False)[0]
 
     ex = MMRVISUALIZER(mesh)
 

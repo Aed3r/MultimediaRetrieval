@@ -1,5 +1,10 @@
-import imp
+import os
 from util import *
+from tqdm import tqdm
+import pymeshfix
+
+MINRESAMPLINGTHRESHOLD = 500
+MAXRESAMPLINGTHRESHOLD = 50000
 
 # Translates the shape to the given position and returns the result
 def translate_mesh_to_origin(mesh):
@@ -29,6 +34,8 @@ def align_shape(mesh):
 
     # Rotate the shape
     mesh["vertices"] = o3d.utility.Vector3dVector(np.dot(rotation_matrix, np.asarray(mesh["vertices"]).T).T)
+    newAABB = o3d.geometry.AxisAlignedBoundingBox.create_from_points(mesh["vertices"])
+    mesh["aabb"] = [newAABB.get_min_bound()[0], newAABB.get_min_bound()[1], newAABB.get_min_bound()[2], newAABB.get_max_bound()[0], newAABB.get_max_bound()[1], newAABB.get_max_bound()[2]]
     return mesh
 
 # Performs the flipping test and mirrors the shape if necessary
@@ -71,15 +78,48 @@ def resampling(mesh):
 
     return mesh
 
-def normalize(mesh):    #doResampling=True
-    #if doResampling:
-    if int(mesh['numVerts']) < 500 or mesh['numVerts'] > 50000:
+# only work for certain shapes  https://pymeshfix.pyvista.org/
+def hole_stitching(data, verbose=False):
+    errorNumber = 1
+    vertices = np.asarray(data['vertices'])
+    faces = data['faces']
+
+    try:
+        meshfix = pymeshfix.MeshFix(vertices, faces)
+        # meshfix.plot()      # Plot input
+        # Repair input mesh
+        meshfix.repair(verbose=verbose)
+        # meshfix.plot()      # View the repaired mesh (requires vtkInterface)
+        # Access the repaired mesh with vtk
+        data['vertices'] = meshfix.v
+        data['faces'] = meshfix.f
+        data['numVerts'] = len(meshfix.v)
+        data['numFaces'] = len(meshfix.f)
+    except:
+        print('Not suitable' + errorNumber)
+        errorNumber += 1
+
+    return data
+
+# Applies all the normalization steps to the given mesh
+def normalize(mesh):
+    if mesh['numVerts'] < MINRESAMPLINGTHRESHOLD or mesh['numVerts'] > MAXRESAMPLINGTHRESHOLD:
          mesh = resampling(mesh)
+    mesh = hole_stitching(mesh)
     mesh = translate_mesh_to_origin(mesh)
     mesh = align_shape(mesh)
     mesh = flipping_test(mesh)
     mesh = scale_mesh_to_unit(mesh)
     return mesh
+
+# Normalizes and returns all the meshes in the 'meshes' array
+def normalize_all(meshes):
+    res = []
+
+    for mesh in tqdm(meshes, desc="Normalizing meshes", ncols=150):
+        res.append(normalize(mesh))
+
+    return res
 
 if __name__ == "__main__":
     import load_meshes
@@ -88,7 +128,7 @@ if __name__ == "__main__":
     # Test all normalization functions
 
     # load all 380 meshes in LPSB
-    meshes = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=-1, returnInfoOnly=False)
+    meshes = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, fromNORM=False, randomSample=-1, returnInfoOnly=False)
     barycenters_0 = []
     barycenters_1 = []
     for mesh in meshes:

@@ -38,6 +38,61 @@
                     {"bsonType": "double", "description": "maxY"},
                     {"bsonType": "double", "description": "maxZ"}
                 ]
+            }, 
+            "surfaceArea": {
+                "bsonType": "double",
+                "description": "Surface area of the mesh"
+            },
+            "compactness": {
+                "bsonType": "double",
+                "description": "Compactness of the mesh, with respect to a sphere"
+            },
+            "rectanfularity": {
+                "bsonType": "double",
+                "description": "3D Rectangularity of the mesh (shape volume divided by OBB volume)"
+            },
+            "diameter": {
+                "bsonType": "double",
+                "description": "Diameter of the mesh"
+            },
+            "eccentricity": {
+                "bsonType": "double",
+                "description": "Eccentricity of the mesh (ratio of largest to smallest eigenvalues of covariance matrix)"
+            },
+            "A3": {
+                "bsonType": "array",
+                "minItems": 10,
+                "maxItems": 10,
+                "additionalProperties": false,
+                "description": "Distribution of the angle between 3 random vertices"
+            },
+            "D1": {
+                "bsonType": "array",
+                "minItems": 10,
+                "maxItems": 10,
+                "additionalProperties": false,
+                "description": "Distirbution of the distance between barycenter and random vertex "
+            },
+            "D2": {
+                "bsonType": "array",
+                "minItems": 10,
+                "maxItems": 10,
+                "additionalProperties": false,
+                "description": "Distribution of the distance between 2 random vertices"
+            },
+            "D3": {
+                "bsonType": "array",
+                "minItems": 10,
+                "maxItems": 10,
+                "additionalProperties": false,
+                "description": "Distribution of the square root of area of triangle given by 3 random vertices"
+            },
+            "D4": {
+                "bsonType": "array",
+                "minItems": 10,
+                "maxItems": 10,
+                "additionalProperties": false,
+                "description": "Distribution of the cube root of volume of tetrahedron formed by 4 random vertices"
             }
         }
     }

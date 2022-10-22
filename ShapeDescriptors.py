@@ -3,7 +3,6 @@ import time
 import load_meshes
 import open3d as o3d
 from tqdm import tqdm
-import pymeshfix
 import math
 import util
 import numpy as np
@@ -18,30 +17,8 @@ def get_Surface_Area(data):
     surface_area = o3d.geometry.TriangleMesh.get_surface_area(mesh)
     return surface_area
 
-# only work for certain shapes  https://pymeshfix.pyvista.org/
-def hole_stitching(data):
-    errorNumber = 1
-    vertices = np.asarray(data['vertices'])
-    faces = data['faces']
-
-    try:
-        meshfix = pymeshfix.MeshFix(vertices, faces)
-        # meshfix.plot()      # Plot input
-        # Repair input mesh
-        meshfix.repair(verbose=True)
-        # meshfix.plot()      # View the repaired mesh (requires vtkInterface)
-        # Access the repaired mesh with vtk
-        data['vertices'] = meshfix.v
-        data['faces'] = meshfix.f
-    except:
-        print('Not suitable' + errorNumber)
-        errorNumber += 1
-
-    return data
-
 # Calculate the volume of meshes in the data list
 def get_Volume(data):
-    data = hole_stitching(data)
     mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(data['vertices']), o3d.cpu.pybind.utility.Vector3iVector(data['faces']))
     volume = o3d.geometry.TriangleMesh.get_volume(mesh)
     return volume
@@ -172,11 +149,11 @@ def sample4Verts(mesh, func):
     return res
 
 # Sample the angle of 3 random vertices in the mesh
-def A3(mesh):
+def A3(mesh, bins=25):
     res = sample3Verts(mesh, util.angle_between)
 
     # Calculate histogram of angles
-    histogram, bins = np.histogram(res, bins=25, range=(0, math.pi), density=True)
+    histogram, bins = np.histogram(res, bins, range=(0, math.pi), density=True)
     
     # Calculate the mean of the histogram
     histogram = list(histogram / np.sum(histogram))
@@ -184,7 +161,7 @@ def A3(mesh):
     return histogram, bins
 
 # Sample the distance between barycenter and random vertex in the mesh
-def D1(mesh):
+def D1(mesh, bins=22):
     barycenter = np.array(util.get_shape_barycenter(mesh))
     res = []
 
@@ -192,7 +169,7 @@ def D1(mesh):
         res.append(util.distance_between(barycenter, np.array(mesh["vertices"][i])))
 
     # Calculate histogram of distances
-    histogram, bins = np.histogram(res, bins=22, range=(0,1), density=True)
+    histogram, bins = np.histogram(res, bins, range=(0,1), density=True)
 
     # Calculate the mean of the histogram
     histogram = list(histogram / np.sum(histogram))
@@ -200,11 +177,11 @@ def D1(mesh):
     return histogram, bins
 
 # Sample the distance between two random vertices in the mesh
-def D2(mesh):
+def D2(mesh, bins=23):
     res = sample2Verts(mesh, util.distance_between)
 
     # Calculate histogram of distances
-    histogram, bins = np.histogram(res, bins=23, range=(0, math.sqrt(3)), density=True)
+    histogram, bins = np.histogram(res, bins, range=(0, math.sqrt(3)), density=True)
 
     # Calculate the mean of the histogram
     histogram = list(histogram / np.sum(histogram))
@@ -212,11 +189,11 @@ def D2(mesh):
     return histogram, bins
 
 # Sample the square root of area of triangle given by 3 random vertices 
-def D3(mesh):
+def D3(mesh, bins=25):
     res = sample3Verts(mesh, util.triangle_area)
 
     # Calculate histogram of areas
-    histogram, bins = np.histogram(res, bins=25, range=(0, (math.sqrt(3) / 2) ** (1/2) ), density=True)
+    histogram, bins = np.histogram(res, bins, range=(0, (math.sqrt(3) / 2) ** (1/2) ), density=True)
 
     # Calculate the mean of the histogram
     histogram = list(histogram / np.sum(histogram))
@@ -224,11 +201,11 @@ def D3(mesh):
     return histogram, bins
 
 # Sample the cube root of volume of tetrahedron formed by 4 random vertices 
-def D4(mesh):
+def D4(mesh, bins=29):
     res = sample4Verts(mesh, util.tetrahedron_volume)
 
     # Calculate histogram of volumes
-    histogram, bins = np.histogram(res, bins=29, range=(0,(1/3) ** (1/3)), density=True)
+    histogram, bins = np.histogram(res, bins, range=(0,(1/3) ** (1/3)), density=True)
 
     # Calculate the mean of the histogram
     histogram = list(histogram / np.sum(histogram))
@@ -237,14 +214,14 @@ def D4(mesh):
 
 
 def genFeaturePlots():
-    meshes = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=-1, returnInfoOnly=False)
+    meshes = load_meshes.get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=-1, returnInfoOnly=False)
     features = {}
 
     print("Generating feature plots...")
     startTime = time.time()
 
     for i in tqdm(range(len(meshes)), desc="Normalizing meshes", ncols=150):
-        meshes[i] = normalization.normalize(meshes[i], doResampling=False)
+        meshes[i] = normalization.normalize(meshes[i])
 
     features["A3"] = {}
     for i in tqdm(range(len(meshes)), desc="Calculating A3 shape descriptor", ncols=150):
@@ -304,8 +281,29 @@ def genFeaturePlots():
     
     print(f"Feature plots generated in {time.time() - startTime} seconds")
 
+def extract_all_features(mesh):
+    res = {}
+    res["path"] = mesh["path"]
+    res["volume"] = get_Volume(mesh)
+    res["surface_area"] = get_Surface_Area(mesh)
+    res["compactness"] = get_Compactness(mesh)
+    res["diameter"] = get_diameter(mesh)
+    res["eccentricity"] = get_eccentricity(mesh)
+    res["A3"] = A3(mesh, bins=10)[0]
+    res["D1"] = D1(mesh, bins=10)[0]
+    res["D2"] = D2(mesh, bins=10)[0]
+    res["D3"] = D3(mesh, bins=10)[0]
+    res["D4"] = D4(mesh, bins=10)[0]
+    return res
+
+def extract_all_features_from_meshes(meshes):
+    res = []
+    for mesh in tqdm(meshes, desc="Extracting features", ncols=150):
+        res.append(extract_all_features(mesh))
+    return res
+
 if __name__ == '__main__':
-    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=2, returnInfoOnly=False)
+    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, fromNORM=False, randomSample=2, returnInfoOnly=False)
     #data = 'data/LabeledDB_new/Bird/256.off'
     #mesh = load_meshes.load_OFF(data)
     # get normalized mesh
