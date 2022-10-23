@@ -148,6 +148,11 @@ def sample4Verts(mesh, func):
 
     return res
 
+# Normalize the given histogram
+def normalize_histogram(histogram, bins):
+    histogram = list(histogram / np.sum(histogram))
+    return histogram, bins
+
 # Sample the angle of 3 random vertices in the mesh
 def A3(mesh, bins=25):
     res = sample3Verts(mesh, util.angle_between)
@@ -158,7 +163,7 @@ def A3(mesh, bins=25):
     # Calculate the mean of the histogram
     histogram = list(histogram / np.sum(histogram))
 
-    return histogram, bins
+    return normalize_histogram(histogram, bins)
 
 # Sample the distance between barycenter and random vertex in the mesh
 def D1(mesh, bins=22):
@@ -174,7 +179,7 @@ def D1(mesh, bins=22):
     # Calculate the mean of the histogram
     histogram = list(histogram / np.sum(histogram))
 
-    return histogram, bins
+    return normalize_histogram(histogram, bins)
 
 # Sample the distance between two random vertices in the mesh
 def D2(mesh, bins=23):
@@ -186,7 +191,7 @@ def D2(mesh, bins=23):
     # Calculate the mean of the histogram
     histogram = list(histogram / np.sum(histogram))
 
-    return histogram, bins
+    return normalize_histogram(histogram, bins)
 
 # Sample the square root of area of triangle given by 3 random vertices 
 def D3(mesh, bins=25):
@@ -198,7 +203,7 @@ def D3(mesh, bins=25):
     # Calculate the mean of the histogram
     histogram = list(histogram / np.sum(histogram))
 
-    return histogram, bins
+    return normalize_histogram(histogram, bins)
 
 # Sample the cube root of volume of tetrahedron formed by 4 random vertices 
 def D4(mesh, bins=29):
@@ -210,9 +215,11 @@ def D4(mesh, bins=29):
     # Calculate the mean of the histogram
     histogram = list(histogram / np.sum(histogram))
 
-    return histogram, bins
+    return normalize_histogram(histogram, bins)
 
-
+# Generate plots for the A3, D1, D2, D3 and D4 features for the given meshes
+# Use doNormalization=False if the meshes are already normalized
+# The function takes care of normalizing the histograms
 def genFeaturePlots(meshes, doNormalization=False):
     features = {}
 
