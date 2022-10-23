@@ -1,4 +1,5 @@
 from curses.ascii import BS
+import time
 from pymongo import MongoClient
 from pymongo.errors import CollectionInvalid
 import pymongo
@@ -85,6 +86,19 @@ class DatabaseManager:
         # Remove the unique index
         self._db.meshes.drop_index("load_index")
 
+    # Add the given data to an existing item in the db
+    # The data must be a dictionary and contain the path field
+    def update_one(self, data):
+        for key in data:
+            if key != 'path':
+                self._db.meshes.update_one({'path': data['path']}, {'$set': {key: data[key]}})
+
+    # Update the meshes with the given data
+    # The data must be a list of dictionaries which all contain the path field
+    def update_all(self, data):
+        for d in tqdm(data, desc="Saving features into database", ncols=150):
+            self.update_one(d)
+
     # Return the number of meshes loaded in the db
     def get_mesh_count(self):
         return self._db.meshes.count_documents({})
@@ -95,8 +109,11 @@ class DatabaseManager:
 
     # Purge the database
     def purge(self):
+        print("Purging database...")
+        start = time.time()
         self._db.drop_collection('meshes')
         self.create_collection()
+        print("Database purged successfully. (Took {:.2f} seconds)".format(time.time() - start))
 
 
 def main():
@@ -105,7 +122,7 @@ def main():
     dbmngr = DatabaseManager()
 
     # Load the data
-    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=-1, returnInfoOnly=True)
+    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, fromNORM=False, randomSample=-1, returnInfoOnly=True)
 
     # Insert the data into the db
     dbmngr.insert_data(data)

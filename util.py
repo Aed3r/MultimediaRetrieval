@@ -25,12 +25,16 @@ def get_shape_barycenter(mesh):
 # Translates the shape by the given offset and returns the result
 def translate_mesh(mesh, translation):
     mesh["vertices"] = o3d.utility.Vector3dVector(np.asarray(mesh["vertices"]) + translation)
+    newAABB = o3d.geometry.AxisAlignedBoundingBox.create_from_points(mesh["vertices"])
+    mesh["aabb"] = [newAABB.get_min_bound()[0], newAABB.get_min_bound()[1], newAABB.get_min_bound()[2], newAABB.get_max_bound()[0], newAABB.get_max_bound()[1], newAABB.get_max_bound()[2]]
     return mesh
 
 # Scales the shape by the given factor and returns the result
 # Scale can be a scalar or a vector
 def scale_mesh(mesh, scale):
     mesh["vertices"] = o3d.utility.Vector3dVector(np.asarray(mesh["vertices"]) * scale)
+    newAABB = o3d.geometry.AxisAlignedBoundingBox.create_from_points(mesh["vertices"])
+    mesh["aabb"] = [newAABB.get_min_bound()[0], newAABB.get_min_bound()[1], newAABB.get_min_bound()[2], newAABB.get_max_bound()[0], newAABB.get_max_bound()[1], newAABB.get_max_bound()[2]]
     return mesh
 
 # Compute the shape's covariance matrix
@@ -84,19 +88,19 @@ def random_vertices(mesh, count):
 
 # Returns the angle between the 3 given vertices
 def angle_between(v1, v2, v3):
-    v1 = v1 - v2
-    v2 = v3 - v2
+    v1 = np.asarray(v1) - np.asarray(v2)
+    v2 = np.asarray(v3) - np.asarray(v2)
     return np.arccos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
 # Returns the distance between the 2 given vertices
 def distance_between(v1, v2):
-    return np.linalg.norm(v1 - v2)
+    return np.linalg.norm(np.asarray(v1) - np.asarray(v2))
 
 # Returns the square root of area of triangle given by 3 random vertices
 def triangle_area(v1, v2, v3):
-    a = np.linalg.norm(v1 - v2)
-    b = np.linalg.norm(v2 - v3)
-    c = np.linalg.norm(v3 - v1)
+    a = np.linalg.norm(np.asarray(v1) - np.asarray(v2))
+    b = np.linalg.norm(np.asarray(v2) - np.asarray(v3))
+    c = np.linalg.norm(np.asarray(v3) - np.asarray(v1))
     s = (a + b + c) / 2
     return np.sqrt(s * (s - a) * (s - b) * (s - c))
 
@@ -108,9 +112,9 @@ def tetrahedron_volume_v2(v1, v2, v3, v4):
 # Returns the cube root of volume of tetrahedron given by 4 random vertices
 def tetrahedron_volume(v1, v2, v3, v4):
     # assume the peak point is v4
-    a = v1 - v4
-    b = v2 - v4
-    c = v3 - v4
+    a = np.asarray(v1) - np.asarray(v4)
+    b = np.asarray(v2) - np.asarray(v4)
+    c = np.asarray(v3) - np.asarray(v4)
     mixed_product = np.dot(a, np.cross(b, c))
     volume = (np.linalg.norm(mixed_product))/6
     return np.cbrt(volume)
@@ -121,7 +125,7 @@ if __name__ == "__main__":
     # Test barycenter translation
 
     # Load 100 random meshes
-    meshes = load_meshes.get_meshes(fromLPSB=True, fromPRIN=True, randomSample=100, returnInfoOnly=False)
+    meshes = load_meshes.get_meshes(fromLPSB=True, fromPRIN=True, fromNORM=False, randomSample=100, returnInfoOnly=False)
 
     for mesh in meshes:
         # Calculate the PCA

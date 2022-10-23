@@ -6,6 +6,7 @@ import open3d as o3d
 
 LABELED_PSB_DB = os.path.join("data", "LabeledDB_new")
 PRINCETON_DB = os.path.join("data","psb_v1", "benchmark")
+NORMALIZEDMESHESFOLDER = os.path.join("data", "normalized")
 
 """Load a mesh from an OFF file.
     Use returnInfoOnly=True to return the number of vertices and faces, and the type of the faces.
@@ -37,7 +38,6 @@ def load_OFF (path, returnInfoOnly=False):
                 if not readCounts:
                     numVerts = int(tokens[0])
                     numFaces = int(tokens[1])
-                    numEdges = int(tokens[2])
 
                     vertices = [None] * numVerts
                     faces = [None] * numFaces
@@ -117,8 +117,8 @@ def load_OFF (path, returnInfoOnly=False):
 
     result = {
         "path": path, 
-        "numVerts": numVerts, 
-        "numFaces": numFaces, 
+        "numVerts": len(vertices), 
+        "numFaces": len(faces), 
         "faceType": faceType,
         "aabb": [aabb.get_min_bound()[0], aabb.get_min_bound()[1], aabb.get_min_bound()[2], aabb.get_max_bound()[0], aabb.get_max_bound()[1], aabb.get_max_bound()[2]],
         "name": fileName}
@@ -238,8 +238,8 @@ def load_PLY (path, returnInfoOnly=False):
 
     result = {
         "path": path, 
-        "numVerts": numVerts, 
-        "numFaces": numFaces, 
+        "numVerts": len(vertices), 
+        "numFaces": len(faces), 
         "faceType": faceType,
         "aabb": [aabb.get_min_bound()[0], aabb.get_min_bound()[1], aabb.get_min_bound()[2], aabb.get_max_bound()[0], aabb.get_max_bound()[1], aabb.get_max_bound()[2]],
         "name": fileName}
@@ -303,10 +303,10 @@ def get_princeton_shape_classes():
 
     return classes
 
-# Load meshes from the Labeled PSB dataset and Princeton Shape Benchmark
+# Load meshes from the Labeled PSB dataset (fromLPSB=True), Princeton Shape Benchmark (fromPRINC=True) or normalized meshes directory (fromNORM=True)
 # Use returnInfoOnly=True to return the number of vertices and faces, and the type of the faces only.
 # Use randomSample to randomly sample a subset of the meshes of both datasets. Use -1 to load all meshes.
-def get_meshes(fromLPSB=True, fromPRIN=True, randomSample=200, returnInfoOnly=True):
+def get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=200, returnInfoOnly=True):
     directories = [] # Array of all directories to find meshes in, with their associated shape class: [(directory, shapeClass), ...]
     files = [] # Array of all files to load meshes from: [(filename, shapeClass), ...]
     results = []
@@ -317,7 +317,7 @@ def get_meshes(fromLPSB=True, fromPRIN=True, randomSample=200, returnInfoOnly=Tr
         if not os.path.isdir(LABELED_PSB_DB):
             raise Exception('Failed to find the Labeled PSB database at \'' + LABELED_PSB_DB + '\'!')
 
-        directories = [(os.path.join(LABELED_PSB_DB, d), d) for d in os.listdir(LABELED_PSB_DB) if os.path.isdir(os.path.join(LABELED_PSB_DB, d))]
+        directories.extend([(os.path.join(LABELED_PSB_DB, d), d) for d in os.listdir(LABELED_PSB_DB) if os.path.isdir(os.path.join(LABELED_PSB_DB, d))])
 
     # Charge the Princeton Shape Benchmark dataset if required
     if fromPRIN:
@@ -330,6 +330,15 @@ def get_meshes(fromLPSB=True, fromPRIN=True, randomSample=200, returnInfoOnly=Tr
                 else:
                     folder = os.path.join(PRINCETON_DB, "db", str(s)[0:len(str(s))-2], 'm' + str(s))
                 directories.append((folder, c['name']))
+
+    # Charge Normalized meshes if required
+    if fromNORM:
+        # Check if the database exists
+        if not os.path.isdir(NORMALIZEDMESHESFOLDER):
+            raise Exception('Failed to find the Normalized meshes directory at \'' + NORMALIZEDMESHESFOLDER + '\'!')
+
+        res = [(os.path.join(NORMALIZEDMESHESFOLDER, d), d) for d in os.listdir(NORMALIZEDMESHESFOLDER) if os.path.isdir(os.path.join(NORMALIZEDMESHESFOLDER, d))]
+        directories.extend(res)
 
     # Find all files located in the loaded directories with file extension .ply or .off
     for d in directories:
@@ -354,6 +363,31 @@ def get_meshes(fromLPSB=True, fromPRIN=True, randomSample=200, returnInfoOnly=Tr
         results.append(res)
     
     return results
+
+# Saves the given mesh to the given directory
+# Automatically creates and saves in a subdirectory with the shape class name
+def save_mesh(mesh, directory):
+    directory = os.path.join(directory, mesh["class"])
+
+    # Check if the output directory exists
+    if not os.path.isdir(directory):
+        os.makedirs(directory)
+
+    # Save the mesh as .off
+    geometry = o3d.geometry.TriangleMesh()
+    geometry.vertices = o3d.utility.Vector3dVector(mesh["vertices"])
+    geometry.triangles = o3d.utility.Vector3iVector(mesh["faces"])
+    o3d.io.write_triangle_mesh(os.path.join(directory, mesh['name']), geometry, write_ascii=True)
+
+# Saves the given meshes to the given directory
+# Automatically creates and saves in subdirectories with the shape class names
+def save_all_meshes(meshes, directory):
+    # Check if the output directory exists
+    if not os.path.isdir(directory):
+        os.makedirs(directory)
+
+    for m in tqdm(meshes, desc='Saving meshes', ncols=150):
+        save_mesh(m, directory)
 
 if __name__ == '__main__':
     import sys
@@ -384,4 +418,4 @@ if __name__ == '__main__':
     mesh.compute_vertex_normals()
     o3d.visualization.draw_geometries([mesh])
 
-    test = get_meshes(fromLPSB=True, fromPRIN=True, randomSample=200, returnInfoOnly=True) # Place a breakpoint here to test the function
+    test = get_meshes(fromLPSB=True, fromPRIN=True, fromNORM=False, randomSample=200, returnInfoOnly=True) # Place a breakpoint here to test the function

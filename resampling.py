@@ -90,7 +90,7 @@ if __name__ == '__main__':
     # get mesh from database
     # NOTICE: To test the function, change randomSample to a small number!  Use -1 to load all meshes.
     # this seems strange, maybe we should take data from the database?
-    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, randomSample=-1, returnInfoOnly=True)
+    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, fromNORM=False, randomSample=-1, returnInfoOnly=True)
     data_new = []                               # store remeshed data
 
     db = MongoClient("mongodb://localhost:27017/")['mmr']
