@@ -2,6 +2,7 @@ import os
 from util import *
 from tqdm import tqdm
 import pymeshfix
+import trimesh
 
 MINRESAMPLINGTHRESHOLD = 500
 MAXRESAMPLINGTHRESHOLD = 50000
@@ -100,6 +101,24 @@ def hole_stitching(data, verbose=False):
         errorNumber += 1
 
     return data
+
+
+# new hole filling in trimesh.repair
+def hole_filling(mesh):
+    errorNumber = 1
+    # works for 3 meshes that hole_stitching cannot deal with:
+    # data/ply/LabeledDB_new/Glasses/42.off
+    # data/ply/LabeledDB_new/Mech/331.off
+    # data/ply/LabeledDB_new/Table/160.off
+
+    try:
+        mesh = trimesh.Trimesh(vertices=mesh['vertices'], faces=mesh['faces'])
+        mesh = trimesh.repair.fill_holes(mesh)
+    except:
+        print('Not suitable: %d'  %errorNumber)
+        errorNumber = errorNumber + 1  
+
+    return mesh
 
 # Applies all the normalization steps to the given mesh
 def normalize(mesh):
