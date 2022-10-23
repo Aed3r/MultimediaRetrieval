@@ -64,6 +64,10 @@ def extract_features():
 
     print(f"Features extracted and saved successfully. ({time.time() - start}s)")
 
+def gen_feature_plots():
+    meshes = lm.get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=-1, returnInfoOnly=False)
+    sd.genFeaturePlots(meshes)
+
 def main():
     global dbmngr
 
@@ -71,9 +75,9 @@ def main():
     if len(sys.argv) > 1:
         if sys.argv[1].lower() == "gen":
             gen_database()
-        elif sys.argv[1].lower() == "normLPSB":
+        elif sys.argv[1].lower() == "normlpsb":
             save_normalize_meshes(fromLPSB=True)
-        elif sys.argv[1].lower() == "normPRINC":
+        elif sys.argv[1].lower() == "normprinc":
             save_normalize_meshes(fromPRIN=True)
         elif sys.argv[1].lower() == "norm":
             save_normalize_meshes(fromLPSB=True, fromPRIN=True)
@@ -85,6 +89,8 @@ def main():
             print(f'{dbmngr.get_mesh_count_by_category(sys.argv[2])} meshes with the category {sys.argv[2]}')
         elif sys.argv[1].lower() == "extract":
             extract_features()
+        elif sys.argv[1].lower() == "genfeatureplots":
+            gen_feature_plots()
         elif sys.argv[1].lower() == "help":
             print("Available commands:")
             print("gen: Generates the database using the normalized meshes")
@@ -94,6 +100,7 @@ def main():
             print("count: Prints the number of meshes loaded in the database")
             print("countbycat: Prints the number of meshes with the given shape class")
             print("extract: Extracts features from the normalized meshes and saves them to the database")
+            print("genFeaturePlots: Generates plots of the extracted features")
             print("help: Prints this help message")
         else:
             print("Invalid argument")
@@ -102,4 +109,5 @@ def main():
         print("Use 'python main.py help' to see the available commands")
 
 if __name__ == "__main__":
-    main()
+    #main()
+    gen_feature_plots()

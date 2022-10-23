@@ -115,6 +115,15 @@ class DatabaseManager:
         self.create_collection()
         print("Database purged successfully. (Took {:.2f} seconds)".format(time.time() - start))
 
+    def get_all(self):
+        return self._db.meshes.find()
+    
+    def get_all_by_category(self, shapeClass):
+        return self._db.meshes.find({'class': shapeClass})
+    
+    def get_all_with_extracted_features(self):
+        return self._db.meshes.find({'D4': {'$exists': True}})
+
 
 def main():
     import load_meshes

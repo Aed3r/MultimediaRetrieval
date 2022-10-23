@@ -213,15 +213,15 @@ def D4(mesh, bins=29):
     return histogram, bins
 
 
-def genFeaturePlots():
-    meshes = load_meshes.get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=-1, returnInfoOnly=False)
+def genFeaturePlots(meshes, doNormalization=False):
     features = {}
 
     print("Generating feature plots...")
     startTime = time.time()
 
-    for i in tqdm(range(len(meshes)), desc="Normalizing meshes", ncols=150):
-        meshes[i] = normalization.normalize(meshes[i])
+    if doNormalization:
+        for i in tqdm(range(len(meshes)), desc="Normalizing meshes", ncols=150):
+            meshes[i] = normalization.normalize(meshes[i])
 
     features["A3"] = {}
     for i in tqdm(range(len(meshes)), desc="Calculating A3 shape descriptor", ncols=150):
