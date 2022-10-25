@@ -27,6 +27,10 @@ def get_Cosine_Distance(vector_1, vector_2):
 
     return Cosine_distance
 
+def get_Earth_Mover_Distance(vector_1, vector_2):
+
+    EMD = wasserstein_distance(vector1, vector2)
+    return EMD
 
 if __name__ == "__main__":
     # test Euclidean Distance
@@ -42,3 +46,7 @@ if __name__ == "__main__":
     cosine_dist = get_Cosine_Distance(vector1, vector2)
     print('Cosine distance: %.5f' %cosine_dist)
     print("get_Cosine_Distance test finished!")
+    
+    EMD = get_Earth_Mover_Distance(vector1, vector2)
+    print("Earth Mover distance: %.5f" %EMD)
+    print("get_Earth_Mover_Distance test finished!")
