@@ -4,3 +4,4 @@ tqdm==4.64.1
 pyacvd==0.2.8
 pymeshfix==0.16.1
 matplotlib==3.6.0
+trimesh==3.15.5

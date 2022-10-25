@@ -12,29 +12,33 @@ class GUI:
         # coordinate.
         app = gui.Application.instance
         self.window = app.create_window("Open3D - Multimedia Retrieval GUI", 1024, 768)
-        # Since we want the label on top of the scene, we cannot use a layout,
-        # so we need to manually layout the window's children.
+        w = self.window  # to make the code more concise
+        em = w.theme.font_size # font size in pixels
+
+        # Top level separation
+        self.mainPanel = gui.Horiz(spacing=0, margins=gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em))
+        self.mainPanel.add_stretch()
+        self.mainPanel.background_color = gui.Color(0, 0, 1, 1.0)
+
+        # Left panel: grid
+        self.gridPanel = gui.VGrid(cols=5, spacing=0.2 * em, margins=gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em))
+        self.gridPanel.background_color = gui.Color(0, 1, 0, 1.0)
+        self.mainPanel.add_child(self.gridPanel)
+
+        # Right panel: controls
+        self.controlsPanel = gui.Vert(spacing=0.2 * em, margins=gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em))
+        self.controlsPanel.background_color = gui.Color(1, 0, 0, 1.0)
+        self.controlsPanel.add_fixed(30 * em)
+        self.controlsPanel.add_child(gui.Label("Controls"))
+        self.mainPanel.add_child(self.controlsPanel)
+
         self.window.set_on_layout(self._on_layout)
-        self.widget3d = gui.Horiz()
-        
+
+
 
     def _on_layout(self, layout_context):
         r = self.window.content_rect
-        self.widget3d.frame = r
-        pref = self.info.calc_preferred_size(layout_context,
-                                             gui.Widget.Constraints())
-
-        prefShading = self.shadingLabel.calc_preferred_size(layout_context,
-                                             gui.Widget.Constraints())
-
-        prefNorm = self.normLabel.calc_preferred_size(layout_context,
-                                             gui.Widget.Constraints())
-
-        self.info.frame = gui.Rect(r.x,
-                                   r.get_bottom() - pref.height, pref.width,
-                                   pref.height)
-        self.shadingLabel.frame = gui.Rect(r.x, r.y, prefShading.width, prefShading.height)
-        self.normLabel.frame = gui.Rect(r.get_right() - prefNorm.width, r.y, prefNorm.width, prefNorm.height)
+        self._scene.frame = r
 
 
 def main():
