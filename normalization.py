@@ -164,7 +164,9 @@ if __name__ == "__main__":
         assert np.allclose(barycenter, np.zeros(3))
 
         # check the barycenter histogram after centering
-        barycenters_1.append(barycenter) # barycenters list
+        barycenters_1.append(barycenter.copy()) # barycenters list
+
+
     statistics.draw_histogram([i[0] for i in barycenters_0], 'centering') # histogram before centering- check x axis
     statistics.draw_histogram([i[0] for i in barycenters_1], 'centering') # histogram after centering   
     statistics.draw_histogram([i[1] for i in barycenters_0], 'centering') # histogram before centering- check y axis
