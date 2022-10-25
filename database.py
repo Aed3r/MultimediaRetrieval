@@ -124,6 +124,10 @@ class DatabaseManager:
     def get_all_with_extracted_features(self):
         return self._db.meshes.find({'D4': {'$exists': True}})
 
+    # Returns a cursor to find all paths and names of the meshes
+    def get_all_paths(self):
+        return self._db.meshes.find({}, {'path': True, 'name': True, '_id': False})
+
 
 def main():
     import load_meshes
@@ -131,16 +135,19 @@ def main():
     dbmngr = DatabaseManager()
 
     # Load the data
-    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, fromNORM=False, randomSample=-1, returnInfoOnly=True)
+    #data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, fromNORM=False, randomSample=-1, returnInfoOnly=True)
 
     # Insert the data into the db
-    dbmngr.insert_data(data)
+    #dbmngr.insert_data(data)
 
     # Print the number of meshes loaded in the db
     print(f'{dbmngr.get_mesh_count()} meshes loaded in the db')
 
     # Print the number of meshes with the given shape class
     print(f'{dbmngr.get_mesh_count_by_category("Airplane")} meshes with shape class \'Airplane\' loaded in the db')
+
+    paths = dbmngr.get_all_paths()
+    print("All done")
 
 
 if __name__ == "__main__":

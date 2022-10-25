@@ -303,6 +303,14 @@ def get_princeton_shape_classes():
 
     return classes
 
+def load_mesh(path, returnInfoOnly=False):
+    if path.endswith('.off'):
+        return load_OFF(path, returnInfoOnly)
+    elif path.endswith('.ply'):
+        return load_PLY(path, returnInfoOnly)
+    else:
+        raise Exception('Unsupported file format!')
+
 # Load meshes from the Labeled PSB dataset (fromLPSB=True), Princeton Shape Benchmark (fromPRINC=True) or normalized meshes directory (fromNORM=True)
 # Use returnInfoOnly=True to return the number of vertices and faces, and the type of the faces only.
 # Use randomSample to randomly sample a subset of the meshes of both datasets. Use -1 to load all meshes.
@@ -352,10 +360,8 @@ def get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=200, 
 
     # Load the meshes
     for f in tqdm(files, desc='Loading meshes', ncols=150):
-        if f[0].endswith('.off'):
-            res = load_OFF(f[0], returnInfoOnly)
-        elif f[0].endswith('.ply'):
-            res = load_PLY(f[0], returnInfoOnly)
+        if f[0].endswith('.off') or f[0].endswith('.ply'):
+            res = load_mesh(f[0], returnInfoOnly)
         else:
             continue
 
