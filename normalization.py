@@ -79,18 +79,24 @@ def resampling(mesh):
 
     return mesh
 
+def is_watertight(mesh):
+    mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(mesh['vertices']),
+                                     o3d.cpu.pybind.utility.Vector3iVector(mesh['faces']))
+    is_watertight = mesh.is_watertight()
+    return is_watertight
+
 # only work for certain shapes  https://pymeshfix.pyvista.org/
 def hole_stitching(data, verbose=False):
-    errorNumber = 1
+    errorNumber = 0
     vertices = np.asarray(data['vertices'])
     faces = data['faces']
 
     try:
         meshfix = pymeshfix.MeshFix(vertices, faces)
-        # meshfix.plot()      # Plot input
+        #meshfix.plot()      # Plot input
         # Repair input mesh
         meshfix.repair(verbose=verbose)
-        # meshfix.plot()      # View the repaired mesh (requires vtkInterface)
+        #meshfix.plot()      # View the repaired mesh (requires vtkInterface)
         # Access the repaired mesh with vtk
         data['vertices'] = meshfix.v
         data['faces'] = meshfix.f
@@ -123,8 +129,13 @@ def hole_filling(mesh):
 # Applies all the normalization steps to the given mesh
 def normalize(mesh):
     if mesh['numVerts'] < MINRESAMPLINGTHRESHOLD or mesh['numVerts'] > MAXRESAMPLINGTHRESHOLD:
-         mesh = resampling(mesh)
-    mesh = hole_stitching(mesh)
+        mesh = resampling(mesh)
+    if not is_watertight(mesh):
+        mesh = hole_stitching(mesh)
+    if not is_watertight(mesh):     #especially for "data/LabeledDB_new/Bearing/349.off"
+        mesh["faces"] = mesh["faces"].tolist()
+        mesh = resampling(mesh)
+        mesh = hole_stitching(mesh)
     mesh = translate_mesh_to_origin(mesh)
     mesh = align_shape(mesh)
     mesh = flipping_test(mesh)
