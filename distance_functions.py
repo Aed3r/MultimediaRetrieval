@@ -1,5 +1,5 @@
 import numpy as np
-
+from scipy.stats import wasserstein_distance
 
 # calculate the Euclidean Distance between feature vectors
 # formula: d(A, B) = square root of sum((ai-bi)^2), i = 1, 2, ..., n
