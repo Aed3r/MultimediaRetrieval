@@ -1,4 +1,5 @@
 import glob
+import math
 import threading
 from time import sleep
 import time
@@ -213,9 +214,10 @@ class AppWindow:
         self._scene.set_on_sun_direction_changed(self._on_sun_dir)
 
         # Mesh info
-        self._dbmngr = db.DatabaseManager()
+        #self._dbmngr = db.DatabaseManager()
         self._items = []
-        self._itemCount = self._dbmngr.get_mesh_count()
+        #self._itemCount = self._dbmngr.get_mesh_count()
+        self._itemCount = 30
 
         # ---- Settings panel ----
         # Rather than specifying sizes in pixels, which may vary in size based
@@ -227,7 +229,23 @@ class AppWindow:
 
         # Grid
         self._itemsPerRow = 6
-        self._gridPanel = gui.VGrid(cols=self._itemsPerRow, spacing=0.5 * em, margins=gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em))
+        self._grid = []
+
+        # Grid vis material
+        self._gridItemMat = rendering.MaterialRecord()
+        self._gridItemMat.base_color = [1, 1, 1, 1.0000]
+        self._gridItemMat.base_metallic = 0.0
+        self._gridItemMat.base_roughness = 0.5
+        self._gridItemMat.base_reflectance = 0.5
+        self._gridItemMat.base_clearcoat = 0.5
+        self._gridItemMat.base_clearcoat_roughness = 0.2
+        self._gridItemMat.base_anisotropy = 0.0
+        self._gridItemMat.shader = "defaultLit"
+
+        for i in range(self._itemCount):
+            sw = gui.SceneWidget()
+            sw.scene = rendering.Open3DScene(w.renderer)
+            self._grid.append(gui.SceneWidget())
 
         # Widgets are laid out in layouts: gui.Horiz, gui.Vert,
         # gui.CollapsableVert, and gui.VGrid. By nesting the layouts we can
@@ -441,10 +459,12 @@ class AppWindow:
         w.set_on_layout(self._on_layout)
         #w.add_child(self._scene)
         
-        w.add_child(self._gridPanel)
         #w.add_child(self._settings_panel)
         w.add_child(self._controls_panel)
         w.add_child(self._loadedMeshVis)
+
+        for i in range(self._itemCount):
+            w.add_child(self._grid[i])
 
         
 
@@ -573,6 +593,17 @@ class AppWindow:
 
         self._loadedMeshVis.scene.add_geometry("Mesh", self._loadedGeometry, self.settings.material)
 
+    def _set_grid_item_settings(self, item):
+        item.scene.set_background(gui.Color(0, 0, 0))
+        item.scene.show_skybox(False)
+        item.scene.scene.enable_indirect_light(True)
+        item.scene.scene.set_indirect_light_intensity(45000)
+        self._sunDir = [0.577, -0.577, -0.577]
+        item.scene.scene.set_sun_light(self._sunDir, [1, 1, 1], 45000)
+        item.scene.scene.enable_sun_light(True)
+        # [item.scene.DARK_SHADOWS, item.scene.HARD_SHADOWS, item.scene.MED_SHADOWS, item.scene.NO_SHADOWS, item.scene.SOFT_SHADOWS]
+        item.scene.set_lighting(item.scene.MED_SHADOWS, self._sunDir)
+
     def _apply_settings(self):
         bg_color = [
             self.settings.bg_color.red, self.settings.bg_color.green,
@@ -630,16 +661,20 @@ class AppWindow:
         #self._settings_panel.frame = gui.Rect(r.get_right() - settingsWidth, r.y, settingsWidth, settingsHeight)
 
         r = self.window.content_rect
+        em = self.window.theme.font_size
+        sep = 0.5 * em
 
         # Controls panel
         controlsWidth = 17 * layout_context.theme.font_size
         controlsHeight = r.height / 3
         self._controls_panel.frame = gui.Rect(r.get_right() - controlsWidth, r.y, controlsWidth, controlsHeight)
 
-        # Grid panel
+        # Grid
         gridWidth = r.width - controlsWidth
         gridHeight = r.height
-        self._gridPanel.frame = gui.Rect(r.x, r.y, gridWidth, gridHeight)
+        itemWidth = gridWidth / self._itemsPerRow
+        for i in range(self._itemCount):
+            self._grid[i].frame = gui.Rect(r.get_left() + (i * itemWidth) % self._itemsPerRow + sep / 2, math.floor(i / self._itemsPerRow) * itemWidth + sep / 2, itemWidth - sep, itemWidth - sep)
 
         # Load mesh visualizer
         loadedMeshVisWidth = controlsWidth

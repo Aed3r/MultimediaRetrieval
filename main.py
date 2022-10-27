@@ -3,7 +3,6 @@ import load_meshes as lm
 import normalization as nrmlz
 import sys
 import ShapeDescriptors as sd
-from tqdm import tqdm
 import visualizer as vis
 import time
 
@@ -91,6 +90,8 @@ def main():
             extract_features()
         elif sys.argv[1].lower() == "genfeatureplots":
             gen_feature_plots()
+        elif sys.argv[1].lower() == "genthumbnails":
+            gen_thumbnails()
         elif sys.argv[1].lower() == "help":
             print("Available commands:")
             print("gen: Generates the database using the normalized meshes")
@@ -109,5 +110,4 @@ def main():
         print("Use 'python main.py help' to see the available commands")
 
 if __name__ == "__main__":
-    #main()
-    gen_feature_plots()
+    main()

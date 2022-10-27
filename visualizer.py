@@ -3,6 +3,12 @@ import open3d as o3d
 import open3d.visualization.gui as gui
 import open3d.visualization.rendering as rendering
 import normalization
+import os
+from tqdm import tqdm
+import load_meshes as lm
+import queue
+
+THUMBNAILPATH = os.path.join("data", "normalized")
 
 # More advanced visualizer based on the Open3D GetCoord Example.
 class MMRVISUALIZER:
@@ -261,11 +267,36 @@ class MMRVISUALIZER:
                 self.widget3d.scene.remove_geometry("Mesh")
                 if self._plasticMat.shader != "none":
                     self.widget3d.scene.add_geometry("Mesh", self._geometry, self._plasticMat)
+            elif event.key == gui.F7:
+                self.genThumbnails()
                     
 
             return gui.Widget.EventCallbackResult.HANDLED
         return gui.Widget.EventCallbackResult.IGNORED
-        
+
+    def genThumbnails(self):
+        meshes = lm.get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=1, returnInfoOnly=False)
+        paths = queue.Queue()
+
+        def on_image(image):
+            img = image
+            path = paths.get()
+            quality = 9  # png
+            if path.endswith(".jpg"):
+                quality = 100
+            o3d.io.write_image(path, img, quality)
+
+        # Export thumbnails
+        for mesh in tqdm(meshes, desc="Generating thumbnails", ncols=150):	
+            self.widget3d.scene.remove_geometry("Mesh")
+            geometry = o3d.geometry.TriangleMesh()
+            geometry.vertices = o3d.utility.Vector3dVector(mesh["vertices"])
+            geometry.triangles = o3d.utility.Vector3iVector(mesh["faces"])
+            self.widget3d.scene.add_geometry("Mesh", geometry, self._plasticMat)
+            self.widget3d.scene.capture_screen_image()
+            paths.put(os.path.join(THUMBNAILPATH, mesh["shapeClass"], mesh["name"] + ".png"))
+            self.widget3d.scene.scene.render_to_image(on_image)
+
 
 def print_help():
     print("-- Mouse view control --")
@@ -297,7 +328,6 @@ def print_help():
     print("  O            : Take a capture of current rendering settings.")
 
 def main():
-    import load_meshes
     import sys
     import os
 
@@ -316,13 +346,13 @@ def main():
 
         # Load the mesh
         if mesh_path.endswith('.off'):
-            mesh = load_meshes.load_OFF(mesh_path, False)
+            mesh = lm.load_OFF(mesh_path, False)
         elif mesh_path.endswith('.ply'):
-            mesh = load_meshes.load_PLY(mesh_path, False)
+            mesh = lm.load_PLY(mesh_path, False)
         else:
             raise Exception("File format not supported")
     else:
-        mesh = load_meshes.get_meshes(fromLPSB=True, fromPRIN=True, fromNORM=False, randomSample=1, returnInfoOnly=False)[0]
+        mesh = lm.get_meshes(fromLPSB=True, fromPRIN=False, fromNORM=False, randomSample=1, returnInfoOnly=False)[0]
 
     ex = MMRVISUALIZER(mesh)
 
