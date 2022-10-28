@@ -296,6 +296,7 @@ def extract_all_features(mesh):
     res["compactness"] = get_Compactness(mesh)
     res["diameter"] = get_diameter(mesh)
     res["eccentricity"] = get_eccentricity(mesh)
+    res["rectangularity"] = get_3D_Rectangularity(mesh)
     res["A3"] = A3(mesh, bins=10)[0]
     res["D1"] = D1(mesh, bins=10)[0]
     res["D2"] = D2(mesh, bins=10)[0]
