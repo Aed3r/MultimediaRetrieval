@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.stats import wasserstein_distance
+from tomlkit import string
 import database
 import ShapeDescriptors
 import normalization
@@ -9,7 +10,7 @@ import load_meshes
 dbmngr = database.DatabaseManager()
 database_length = 380
 
-def getFeatures(mesh, distance_type):
+def matching_single_Feature(mesh, distance_type):
     # get features from the input (querying) mesh
     mesh = normalization.normalize(mesh)
     SurfaceAreaLoad = ShapeDescriptors.get_Surface_Area(mesh)
@@ -19,12 +20,7 @@ def getFeatures(mesh, distance_type):
     EccentricityLoad = ShapeDescriptors.get_eccentricity(mesh)
     RectangularityLoad = ShapeDescriptors.get_3D_Rectangularity(mesh)
 
-    A3Load = ShapeDescriptors.A3(mesh)
-    D1Load = ShapeDescriptors.D1(mesh)
-    D2Load = ShapeDescriptors.D2(mesh)
-    D3Load = ShapeDescriptors.D3(mesh)
-    D4Load = ShapeDescriptors.D4(mesh)
-
+    # build feature vector of the querying mesh
     loadedMesh_feature_vector = []
     loadedMesh_feature_vector.append(SurfaceAreaLoad)
     loadedMesh_feature_vector.append(CompactnessLoad)
@@ -32,21 +28,15 @@ def getFeatures(mesh, distance_type):
     loadedMesh_feature_vector.append(DiameterLoad)
     loadedMesh_feature_vector.append(EccentricityLoad)
     loadedMesh_feature_vector.append(RectangularityLoad)
-    print("loadedMesh_feature_vector: ")
-    print(loadedMesh_feature_vector)
+    # print("loadedMesh_feature_vector: ")
+    # print(loadedMesh_feature_vector)
+
 
     # get features from database
     meshes = dbmngr.get_all_with_extracted_features()
-    SurfaceArea = []
-    Compactness = []
-    Volume = []
-    Diameter = []
-    Eccentricity = []
-    Rectangularity = []
-    # build feature vectors
-    single_Value_Feature_Vector = [[[] for i in range (2)] for i in range(database_length)]
-    # print(single_Value_Feature_Vector)
 
+    # initialize an empty list
+    single_Value_Feature_Vector = [[[] for i in range (2)] for i in range(database_length)]
     # combine path and 6 descriptors in to one 3-dimensional list
     # [[[path] [S, C, V, D, E, R]]...[[path] [S, C, V, D, E, R]]]
     i = 0
@@ -59,45 +49,24 @@ def getFeatures(mesh, distance_type):
         single_Value_Feature_Vector[i][1].append(mesh['eccentricity'])
         single_Value_Feature_Vector[i][1].append(mesh['rectangularity'])
         i = i + 1
-        
     # print(single_Value_Feature_Vector)
 
-    '''
-    @author Sichun
-    '''
-    # for mesh in meshes:
-    #     SurfaceArea.append(mesh['surface_area'])
-    #     Compactness.append(mesh['compactness'])
-    #     Volume.append(mesh['volume'])       #!Rectangularity
-    #     Diameter.append(mesh['diameter'])
-    #     Eccentricity.append(mesh['eccentricity'])
-    #     Rectangularity.append(mesh['rectangularity'])
-
-    # # normalize features of selected shape
-    # SurfaceAreaNorm = standardNormalization(SurfaceAreaLoad, SurfaceArea)
-    # CompactnessNorm = standardNormalization(CompactnessLoad, Compactness)
-    # VolumeNorm = standardNormalization(VolumeLoad, Volume)
-    # DiameterNorm = standardNormalization(DiameterLoad, Diameter)
-    # EccentricityNorm = standardNormalization(EccentricityLoad, Eccentricity)
-    # RectangularityNorm = standardNormalization(RectangularityLoad, Rectangularity)
     
-    
-    '''
-    @author Nisha
-    '''
+    # standardize single_value_feature_vector
     feature_vector_Standardized = []
     single_Value_Feature_Vectors = []
-    
+        
     # build a list to store all single_value vectors
     for i in range(database_length):
         single_Value_Feature_Vectors.append(single_Value_Feature_Vector[i][1])
     
+    # standardization
     for vector in single_Value_Feature_Vectors:
         feature_vector_Norm = standardization(vector)
         feature_vector_Standardized.append(feature_vector_Norm)
     # print("feature_vector_Standardized: ")
     # print(feature_vector_Standardized)
-
+    
     # calculate distance
     if distance_type == 'Euclidean':
         # Euclidean Distance Case: 
@@ -105,24 +74,103 @@ def getFeatures(mesh, distance_type):
         for vector in feature_vector_Standardized:
             dist_between_feature_vectors = get_Euclidean_Distance(loadedMesh_feature_vector, vector)
             dists.append(dist_between_feature_vectors)
-        # print("Euclidean distance:")
-        # print(dists)
-
     elif distance_type == 'Cosine':
-        # Euclidean Distance Case: 
+        # Cosine Distance Case: 
         dists = []
         for vector in feature_vector_Standardized:
             dist_between_feature_vectors = get_Cosine_Distance(loadedMesh_feature_vector, vector)
             dists.append(dist_between_feature_vectors)
-        # print("Cosine distance:")
-        # print(dists)
-    
+    elif distance_type == 'EMD':
+        # EMD Distance Case: 
+        dists = []
+        for vector in feature_vector_Standardized:
+            dist_between_feature_vectors = get_Earth_Mover_Distance(loadedMesh_feature_vector, vector)
+            dists.append(dist_between_feature_vectors)
+        
+    return dists, single_Value_Feature_Vector
+
+def matching_histo_Feature(mesh, distance_type):
+    # get features from the input (querying) mesh
+    mesh = normalization.normalize(mesh)
+    A3Load = ShapeDescriptors.A3(mesh, bins=10)[0]
+    D1Load = ShapeDescriptors.D1(mesh, bins=10)[0]
+    D2Load = ShapeDescriptors.D2(mesh, bins=10)[0]
+    D3Load = ShapeDescriptors.D3(mesh, bins=10)[0]
+    D4Load = ShapeDescriptors.D4(mesh, bins=10)[0]
+
+    # get features from database
+    meshes = dbmngr.get_all_with_extracted_features()
+
+    histo_Feature_Vector = [[[] for i in range (6)] for i in range(database_length)]
+    # # combine path with each histogram features 
+    # # [[[path] [A3]]...[[path] [A3]]]
+    j = 0
+    for mesh in meshes:
+        histo_Feature_Vector[j][0] = mesh['path']
+        histo_Feature_Vector[j][1] = mesh['A3']
+        histo_Feature_Vector[j][2] = mesh['D1']
+        histo_Feature_Vector[j][3] = mesh['D2']
+        histo_Feature_Vector[j][4] = mesh['D3']
+        histo_Feature_Vector[j][5] = mesh['D4']
+        j = j + 1
+    # print(histo_Feature_Vector)
+
+    # build a list to store all histogram vectors
+    histo_Feature_Vectors_A3 = []
+    histo_Feature_Vectors_D1 = []
+    histo_Feature_Vectors_D2 = []
+    histo_Feature_Vectors_D3 = []
+    histo_Feature_Vectors_D4 = []
+    for i in range(database_length):
+        histo_Feature_Vectors_A3.append(histo_Feature_Vector[i][1])
+        histo_Feature_Vectors_D1.append(histo_Feature_Vector[i][2])
+        histo_Feature_Vectors_D2.append(histo_Feature_Vector[i][3])
+        histo_Feature_Vectors_D3.append(histo_Feature_Vector[i][4])
+        histo_Feature_Vectors_D4.append(histo_Feature_Vector[i][5])
+
+    # histogram features: A3-D4 do not need normalization
+
+    if distance_type == 'EMD_histo_A3':
+        # A3
+        dists = []
+        for vector in histo_Feature_Vectors_A3:
+            dist_between_feature_vectors = get_Earth_Mover_Distance(A3Load, vector)
+            dists.append(dist_between_feature_vectors)
+    elif distance_type == 'EMD_histo_D1':
+        # D1
+        dists = []
+        for vector in histo_Feature_Vectors_D1:
+            dist_between_feature_vectors = get_Earth_Mover_Distance(D1Load, vector)
+            dists.append(dist_between_feature_vectors)
+    elif distance_type == 'EMD_histo_D2':
+        # D2
+        dists = []
+        for vector in histo_Feature_Vectors_D2:
+            dist_between_feature_vectors = get_Earth_Mover_Distance(D2Load, vector)
+            dists.append(dist_between_feature_vectors)
+    elif distance_type == 'EMD_histo_D3':
+        # D3
+        dists = []
+        for vector in histo_Feature_Vectors_D3:
+            dist_between_feature_vectors = get_Earth_Mover_Distance(D3Load, vector)
+            dists.append(dist_between_feature_vectors)
+    elif distance_type == 'EMD_histo_D4':
+        # D4
+        dists = []
+        for vector in histo_Feature_Vectors_D4:
+            dist_between_feature_vectors = get_Earth_Mover_Distance(D4Load, vector)
+            dists.append(dist_between_feature_vectors)
+
+
+    return dists, histo_Feature_Vector
+
+
+def sorting(dists, feature_vector_with_path, distance_type, k = 5):
     # sort top K values in dists[]
     # from small to large values
     dists = np.asarray(dists) # transform to ndarray type
     sorted_index = sorted(range(len(dists)), key=lambda k: dists[k]) # index of sorted array
     sorted_dists = dists[sorted_index] # sorted array
-    k = 5
     print("%d Smallest %s distance between loaded mesh's feature vector and feature vectors in database" %(k, distance_type))
     print(sorted_dists[:k])
     print("index of sorted array: ")
@@ -133,62 +181,15 @@ def getFeatures(mesh, distance_type):
     index = sorted_index[:k]
     paths = []
     for i in index:
-        print(single_Value_Feature_Vector[i][0])
-        path = single_Value_Feature_Vector[i][0]
-        paths.append(path)
-
+        if distance_type == 'Euclidean' or distance_type == 'Cosine' or distance_type == 'EMD':
+            print(feature_vector_with_path[i][0]) # single_Value_Feature_Vector
+            path = feature_vector_with_path[i][0]
+            paths.append(path)
+        elif distance_type == 'EMD_histo_A3' or 'EMD_histo_D1' or 'EMD_histo_D2' or 'EMD_histo_D3' or 'EMD_histo_D4':
+            print(feature_vector_with_path[i][0]) # histo_Feature_Vector
+            path = feature_vector_with_path[i][0]
+            paths.append(path)
     return dists, sorted_dists[:k], sorted_index[:k], paths
-    '''
-    @author Sichun
-    '''
-    # calculate distance
-    SurfaceAreaDis = [[None for i in range(2)] for j in range(len(SurfaceArea))]
-    # print(SurfaceAreaDis)
-    # print(len(SurfaceAreaDis)) # 380
-    CompactnessDis = [[None for i in range(2)] for j in range(len(Compactness))]
-    VolumeDis = [[None for i in range(2)] for j in range(len(Volume))]
-    DiameterDis = [[None for i in range(2)] for j in range(len(Diameter))]
-    EccentricityDis = [[None for i in range(2)] for j in range(len(Eccentricity))]
-    RectangularityDis = [[None for i in range(2)] for j in range(len(Rectangularity))]
-
-
-    meshes = dbmngr.get_all_with_extracted_features()
-    n=0
-
-    if distance_type == 'Euclidean':
-        # Euclidean Distance Case: 
-        for mesh in meshes:
-            SurfaceAreaDis[n][0] = mesh['path']
-            SurfaceAreaDis[n][1] = get_Euclidean_Distance(SurfaceAreaNorm, mesh['surface_area'])
-            CompactnessDis[n][0] = mesh['path']
-            CompactnessDis[n][1] = get_Euclidean_Distance(CompactnessNorm, mesh['compactness'])
-            VolumeDis[n][0] = mesh['path']
-            VolumeDis[n][1] = get_Euclidean_Distance(VolumeNorm, mesh['volume'])
-            DiameterDis[n][0] = mesh['path']
-            DiameterDis[n][1] = get_Euclidean_Distance(DiameterNorm, mesh['diameter'])
-            EccentricityDis[n][0] = mesh['path']
-            EccentricityDis[n][1] = get_Euclidean_Distance(EccentricityNorm, mesh['eccentricity'])
-            RectangularityDis[n][0] = mesh['path']
-            RectangularityDis[n][1] = get_Euclidean_Distance(RectangularityNorm, mesh['rectangularity'])
-            n += 1
-    elif distance_type == 'Cosine':
-        # Cosine Distance Case:
-        for mesh in meshes:
-            SurfaceAreaDis[n][0] = mesh['path']
-            SurfaceAreaDis[n][1] = get_Cosine_Distance(SurfaceAreaNorm, mesh['surface_area'])
-            CompactnessDis[n][0] = mesh['path']
-            CompactnessDis[n][1] = get_Cosine_Distance(CompactnessNorm, mesh['compactness'])
-            VolumeDis[n][0] = mesh['path']
-            VolumeDis[n][1] = get_Cosine_Distance(VolumeNorm, mesh['volume'])
-            DiameterDis[n][0] = mesh['path']
-            DiameterDis[n][1] = get_Cosine_Distance(DiameterNorm, mesh['diameter'])
-            EccentricityDis[n][0] = mesh['path']
-            EccentricityDis[n][1] = get_Cosine_Distance(EccentricityNorm, mesh['eccentricity'])
-            RectangularityDis[n][0] = mesh['path']
-            RectangularityDis[n][1] = get_Cosine_Distance(RectangularityNorm, mesh['rectangularity'])
-            n += 1
-
-    return SurfaceAreaDis, CompactnessDis, VolumeDis, DiameterDis, EccentricityDis, RectangularityDis
 
 
 def minmaxNormalization(meshf, dbf):
@@ -222,7 +223,7 @@ def saveNormFeatures():
         SurfaceArea.append(mesh['surface_area'])
         Compactness.append(mesh['compactness'])
         Volume.append(mesh['volume'])       #!Rectangularity
-        Diameter.append(mesh['diameter'])
+        Diameter.append(mesh['diameter']) 
         Eccentricity.append(mesh['eccentricity'])
         Rectangularity.append(mesh['rectangularity'])
 
@@ -269,34 +270,38 @@ def get_Earth_Mover_Distance(vector_1, vector_2):
     return EMD
 
 if __name__ == "__main__":
-    # # test Euclidean Distance
-    # list1 = [1,1,1]
-    # list2 = [2,3,4]
-    # vector1 = np.asarray(list1)
-    # vector2 = np.asarray(list2)
-    #euclidean_dist = get_Euclidean_Distance(vector1, vector2)
 
+    # load a mesh for test
     name = "Ant/82.off"
     # name = "Hand/181.off"
     path = os.path.join("data/LabeledDB_new/", name)
     mesh = load_meshes.load_OFF(path)
-    euclidean_dist = getFeatures(mesh, 'Euclidean')
-    # cosine_dist = getFeatures(mesh, 'Cosine')
+ 
+    # single value features test
+    Euclidean_dists, single_Value_Feature_Vector = matching_single_Feature(mesh, 'Euclidean')
+    _, _ , _, paths = sorting(Euclidean_dists, single_Value_Feature_Vector, distance_type='Euclidean', k = 5)
+    Cosine_dists, single_Value_Feature_Vector = matching_single_Feature(mesh, 'Cosine')
+    _, _ , _, paths = sorting(Cosine_dists, single_Value_Feature_Vector, distance_type='Cosine', k = 5)
+    EMD_dists, single_Value_Feature_Vector = matching_single_Feature(mesh, 'EMD')
+    _, _ , _, paths = sorting(EMD_dists, single_Value_Feature_Vector, distance_type='EMD', k = 5)
+
+
+    # Histogram features test
+
+    EMD_histo_dist, histo_Feature_Vector = matching_histo_Feature(mesh, 'EMD_histo_A3')
+    _, _ , _, paths = sorting(EMD_histo_dist, histo_Feature_Vector, distance_type='EMD_histo_A3', k = 5)
+
+    EMD_histo_dist, histo_Feature_Vector = matching_histo_Feature(mesh, 'EMD_histo_D1')
+    _, _ , _, paths = sorting(EMD_histo_dist, histo_Feature_Vector, distance_type='EMD_histo_D1', k = 5)
+
+    EMD_histo_dist, histo_Feature_Vector = matching_histo_Feature(mesh, 'EMD_histo_D2')
+    _, _ , _, paths = sorting(EMD_histo_dist, histo_Feature_Vector, distance_type='EMD_histo_D2', k = 5)
+
+    EMD_histo_dist, histo_Feature_Vector = matching_histo_Feature(mesh, 'EMD_histo_D3')
+    _, _ , _, paths = sorting(EMD_histo_dist, histo_Feature_Vector, distance_type='EMD_histo_D3', k = 5)
+
+    EMD_histo_dist, histo_Feature_Vector = matching_histo_Feature(mesh, 'EMD_histo_D4')
+    _, _ , _, paths = sorting(EMD_histo_dist, histo_Feature_Vector, distance_type='EMD_histo_D4', k = 5)
+
     
 
-
-
-    # EMD_dist = getFeatures(mesh, 'EMD')
-
-
-
-    #print('Euclidean distance: %.5f' %i)
-    #print("get_Euclidean_Distance test finished!")
-    #
-    # cosine_dist = get_Cosine_Distance(vector1, vector2)
-    # print('Cosine distance: %.5f' %cosine_dist)
-    # print("get_Cosine_Distance test finished!")
-    #
-    # EMD = get_Earth_Mover_Distance(vector1, vector2)
-    # print("Earth Mover distance: %.5f" %EMD)
-    # print("get_Earth_Mover_Distance test finished!")
