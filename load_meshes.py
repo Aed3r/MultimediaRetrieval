@@ -359,12 +359,17 @@ def get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=200, 
         files = random.sample(files, randomSample)
 
     # Load the meshes
-    for f in tqdm(files, desc='Loading meshes', ncols=150):
-        if f[0].endswith('.off') or f[0].endswith('.ply'):
-            res = load_mesh(f[0], returnInfoOnly)
-        else:
-            continue
-
+    if returnInfoOnly:
+        lbl = 'Loading info of ' + str(len(files)) + ' mesh'
+    else:
+        lbl = 'Loading ' + str(len(files)) + ' mesh'
+    if len(files) == 1:
+        lbl += '...'
+    else:
+        lbl += 'es...'
+    
+    for f in tqdm(files, desc=lbl, ncols=150):
+        res = load_mesh(f[0], returnInfoOnly)
         res["class"] = f[1]
         results.append(res)
     
@@ -394,6 +399,14 @@ def save_all_meshes(meshes, directory):
 
     for m in tqdm(meshes, desc='Saving meshes', ncols=150):
         save_mesh(m, directory)
+
+def load_thumbnail(path):
+    # Check if the thumbnail exists
+    if not os.path.isfile(path):
+        raise Exception('Failed to find the thumbnail at \'' + path + '\'!')
+
+    # Load the thumbnail
+    return o3d.io.read_image(path)
 
 if __name__ == '__main__':
     import sys

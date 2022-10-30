@@ -6,9 +6,11 @@ import normalization
 import os
 from tqdm import tqdm
 import load_meshes as lm
-import queue
 
 THUMBNAILPATH = os.path.join("data", "normalized")
+THUMBNAILSCALE = 1
+WINDOWWIDTH = 1024
+WINDOWHEIGHT = 768
 
 # More advanced visualizer based on the Open3D GetCoord Example.
 class MMRVISUALIZER:
@@ -16,8 +18,8 @@ class MMRVISUALIZER:
         # Create a SceneWidget that fills the entire window, and
         # a label in the lower left on top of the SceneWidget to display the
         # coordinate.
-        app = gui.Application.instance
-        self.window = app.create_window("Open3D - Multimedia Retrieval Visualizer", 1024, 768)
+        self.app = gui.Application.instance
+        self.window = self.app.create_window("Open3D - Multimedia Retrieval Visualizer", WINDOWWIDTH, WINDOWHEIGHT)
         # Since we want the label on top of the scene, we cannot use a layout,
         # so we need to manually layout the window's children.
         self.window.set_on_layout(self._on_layout)
@@ -65,7 +67,8 @@ class MMRVISUALIZER:
         self._normalizationStep = 0
 
         # Set lighting
-        self.widget3d.scene.set_background([1.0000, 1.0000, 0.9294, 1.0000])
+        self._bgColor = [1.0000, 1.0000, 0.9294, 1.0000]
+        self.widget3d.scene.set_background(self._bgColor)
         self.widget3d.scene.show_skybox(True)
         self._showSkybox = True
         self.widget3d.scene.show_axes(False)
@@ -89,7 +92,7 @@ class MMRVISUALIZER:
         bounds = self.widget3d.scene.bounding_box
         center = bounds.get_center()
         self.widget3d.setup_camera(60, bounds, center)
-        #self.widget3d.look_at(center, center - [0, 0, 3], [0, -1, 0])
+        self.widget3d.look_at(center, center + [0, 0, 2], [0, 1, 0])
 
         self.widget3d.set_on_mouse(self._on_mouse_widget3d)
         self.widget3d.set_on_key(self._on_key_widget3d)
@@ -274,29 +277,101 @@ class MMRVISUALIZER:
             return gui.Widget.EventCallbackResult.HANDLED
         return gui.Widget.EventCallbackResult.IGNORED
 
+    # Generate thumbnails from the normalized meshes. Uses the current view of the 3D widget.
+    # Automatically hides the labels
     def genThumbnails(self):
-        meshes = lm.get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=1, returnInfoOnly=False)
-        paths = queue.Queue()
+        meshes = lm.get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=-1, returnInfoOnly=True)
 
-        def on_image(image):
-            img = image
-            path = paths.get()
-            quality = 9  # png
-            if path.endswith(".jpg"):
-                quality = 100
-            o3d.io.write_image(path, img, quality)
+        renderer = rendering.OffscreenRenderer(int(WINDOWWIDTH * THUMBNAILSCALE), int(WINDOWHEIGHT * THUMBNAILSCALE))
+        renderer.scene.camera.copy_from(self.widget3d.scene.camera)
+        renderer.scene.set_lighting(self._shadowOptions[self._shadowIndex], self._sunDir)
+        renderer.scene.show_axes(self._showAxes)
+        renderer.scene.show_skybox(self._showSkybox)
+        renderer.scene.set_background(self._bgColor)
+        renderer.scene.scene.enable_indirect_light(True)
+        renderer.scene.scene.set_indirect_light_intensity(45000)
+        renderer.scene.scene.set_sun_light(self._sunDir, [1, 1, 1], 45000)
+        renderer.scene.scene.enable_sun_light(True)
 
         # Export thumbnails
-        for mesh in tqdm(meshes, desc="Generating thumbnails", ncols=150):	
-            self.widget3d.scene.remove_geometry("Mesh")
+        for meshInfo in tqdm(meshes, desc="Generating thumbnails", ncols=150):	
+            mesh = lm.load_mesh(meshInfo["path"], returnInfoOnly=False)
             geometry = o3d.geometry.TriangleMesh()
             geometry.vertices = o3d.utility.Vector3dVector(mesh["vertices"])
             geometry.triangles = o3d.utility.Vector3iVector(mesh["faces"])
-            self.widget3d.scene.add_geometry("Mesh", geometry, self._plasticMat)
-            self.widget3d.scene.capture_screen_image()
-            paths.put(os.path.join(THUMBNAILPATH, mesh["shapeClass"], mesh["name"] + ".png"))
-            self.widget3d.scene.scene.render_to_image(on_image)
+            geometry.compute_triangle_normals()
+            geometry.compute_vertex_normals()
 
+            renderer.scene.add_geometry("Mesh", geometry, self._plasticMat)
+            if self._showWireframe:
+                wireframe = o3d.geometry.LineSet.create_from_triangle_mesh(geometry)
+                renderer.scene.add_geometry("Wireframe", wireframe, self.wireframeMat)
+
+            img = renderer.render_to_image()
+            o3d.io.write_image(os.path.join(THUMBNAILPATH, meshInfo["class"], meshInfo["name"] + ".png"), img, 9)
+
+            renderer.scene.remove_geometry("Mesh")
+            if self._showWireframe:
+                # Remove current wireframe
+                renderer.scene.remove_geometry("Wireframe")
+            del mesh
+            del geometry
+
+# Creates a thumbnail from the given mesh and returns the resulting image location
+# outputPath can be defined to save the image to the specified location
+def gen_thumbnail(mesh, outputPath=None):
+    renderer = rendering.OffscreenRenderer(int(WINDOWWIDTH * THUMBNAILSCALE), int(WINDOWHEIGHT * THUMBNAILSCALE))
+    
+    sunDir = [0.577, -0.577, -0.577]
+    renderer.scene.set_lighting(renderer.scene.MED_SHADOWS, sunDir)
+    renderer.scene.show_axes(False)
+    renderer.scene.show_skybox(False)
+    bgColor = [1.0000, 1.0000, 0.9294, 1.0000]
+    renderer.scene.set_background(bgColor)
+    renderer.scene.scene.enable_indirect_light(True)
+    renderer.scene.scene.set_indirect_light_intensity(45000)
+    renderer.scene.scene.set_sun_light(sunDir, [1, 1, 1], 45000)
+    renderer.scene.scene.enable_sun_light(True)
+
+    plasticMat = rendering.MaterialRecord()
+    plasticMat.base_color = [0.9765, 0.702, 0.0000, 1.0000]
+    plasticMat.base_metallic = 0.0
+    plasticMat.base_roughness = 0.5
+    plasticMat.base_reflectance = 0.5
+    plasticMat.base_clearcoat = 0.5
+    plasticMat.base_clearcoat_roughness = 0.2
+    plasticMat.base_anisotropy = 0.0
+    plasticMat.shader = "defaultLit"
+
+    if not "vertices" in mesh:
+        mesh = lm.load_mesh(mesh["path"], returnInfoOnly=False)
+    geometry = o3d.geometry.TriangleMesh()
+    geometry.vertices = o3d.utility.Vector3dVector(mesh["vertices"])
+    geometry.triangles = o3d.utility.Vector3iVector(mesh["faces"])
+    geometry.compute_triangle_normals()
+    geometry.compute_vertex_normals()
+
+    renderer.scene.add_geometry("Mesh", geometry, plasticMat)
+
+    # Camera
+    bounds = renderer.scene.bounding_box
+    center = bounds.get_center()
+    renderer.setup_camera(60, center, center + [0, 0, 2], [0, 1, 0])
+
+    img = renderer.render_to_image()
+
+    if outputPath is not None:
+        o3d.io.write_image(outputPath, img, 9)
+    else:
+        # Check if "data/cache" exists
+        if not os.path.exists("data/cache"):
+            os.makedirs("data/cache")
+        
+        # Save image to cache
+        outputPath = "data/cache/" + mesh["name"] + ".png"
+        o3d.io.write_image("data/cache/" + mesh["name"] + ".png", img, 9)
+
+    return outputPath
 
 def print_help():
     print("-- Mouse view control --")
@@ -330,6 +405,10 @@ def print_help():
 def main():
     import sys
     import os
+
+    # mesh = lm.get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=1, returnInfoOnly=False)[0]
+    # gen_thumbnail(mesh, "test.png")
+    # return
 
     app = gui.Application.instance
     app.initialize()

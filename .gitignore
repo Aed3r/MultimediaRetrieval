@@ -1,6 +1,7 @@
 # Project specific
 data/psb_v1
 data/normalized
+data/cache/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
