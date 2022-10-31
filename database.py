@@ -89,6 +89,8 @@ class DatabaseManager:
                 self._db.meshes.insert_one(d)
             except pymongo.errors.DuplicateKeyError:
                 duplicatesCount += 1
+            except:
+                print("Error inserting mesh: {}".format(d['path']))
 
         if duplicatesCount == 1:
             print('1 duplicate mesh found and ignored')
@@ -127,14 +129,14 @@ class DatabaseManager:
         self.create_collection()
         print("Database purged successfully. (Took {:.2f} seconds)".format(time.time() - start))
 
-    # Return all mesh infos saved in the database except the global info
+    # Return all mesh infos saved in the database
     def get_all(self):
         return self._db.meshes.find({})
 
     def get_all_by_category(self, shapeClass):
         return self._db.meshes.find({'class': shapeClass})
     
-    # Return all mesh infos saved in the database with extracted features and except the global info
+    # Return all mesh infos saved in the database with extracted features
     def get_all_with_extracted_features(self):
         return self._db.meshes.find({'D4': {'$exists': True}})
 

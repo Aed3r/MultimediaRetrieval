@@ -291,23 +291,27 @@ def genFeaturePlots(meshes, doNormalization=False):
 def extract_all_features(mesh):
     res = {}
     res["path"] = mesh["path"]
-    res["volume"] = get_Volume(mesh)
-    res["surface_area"] = get_Surface_Area(mesh)
-    res["compactness"] = get_Compactness(mesh)
-    res["diameter"] = get_diameter(mesh)
-    res["eccentricity"] = get_eccentricity(mesh)
-    res["rectangularity"] = get_3D_Rectangularity(mesh)
-    res["A3"] = A3(mesh, bins=10)[0]
-    res["D1"] = D1(mesh, bins=10)[0]
-    res["D2"] = D2(mesh, bins=10)[0]
-    res["D3"] = D3(mesh, bins=10)[0]
-    res["D4"] = D4(mesh, bins=10)[0]
+    try:
+        res["volume"] = get_Volume(mesh)
+        res["surface_area"] = get_Surface_Area(mesh)
+        res["compactness"] = get_Compactness(mesh)
+        res["diameter"] = get_diameter(mesh)
+        res["eccentricity"] = get_eccentricity(mesh)
+        res["rectangularity"] = get_3D_Rectangularity(mesh)
+        res["A3"] = A3(mesh, bins=10)[0]
+        res["D1"] = D1(mesh, bins=10)[0]
+        res["D2"] = D2(mesh, bins=10)[0]
+        res["D3"] = D3(mesh, bins=10)[0]
+        res["D4"] = D4(mesh, bins=10)[0]
+    except:
+        print("Error in extracting features for mesh: ", mesh["path"])
     return res
 
 def extract_all_features_from_meshes(meshes):
     res = []
     for mesh in tqdm(meshes, desc="Extracting features", ncols=150):
-        res.append(extract_all_features(mesh))
+        if "D4" not in mesh:
+            res.append(extract_all_features(mesh))
     return res
 
 if __name__ == '__main__':

@@ -59,7 +59,7 @@ def extract_features():
     if normalized_meshes == []:
         normalized_meshes = lm.get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=-1, returnInfoOnly=False)
     
-    res = sd.extract_all_features_from_meshes(normalized_meshes)
+        res = sd.extract_all_features_from_meshes(normalized_meshes)
 
     dbmngr.update_all(res)
 
