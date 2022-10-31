@@ -1,4 +1,3 @@
-from curses.ascii import BS
 import time
 from pymongo import MongoClient
 from pymongo.errors import CollectionInvalid
