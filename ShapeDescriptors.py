@@ -235,7 +235,7 @@ def genFeaturePlots(meshes, doNormalization=False):
         meshClass = meshes[i]["class"]
         if meshClass not in features["A3"]:
             features["A3"][meshClass] = {}
-
+    
         features["A3"][meshClass][meshes[i]["name"]] = A3(meshes[i])
 
     features["D1"] = {}

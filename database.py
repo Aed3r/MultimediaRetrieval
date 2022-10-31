@@ -54,14 +54,27 @@ class DatabaseManager:
             self._schemaValidated = True
             return
         
+        self.update_validation_schema()
+
+    def update_validation_schema(self):
         # Check if current the schema is valid
         if not self._validateSchema():
+            print("New database validation schema detected. (Re-)creating collection...")
+
+            meshesCursor = self.get_all()
+            meshes = []
+            for mesh in meshesCursor:
+                meshes.append(mesh)
+
             # Drop the collection
             self._db.drop_collection('meshes')
+
             # Create the collection
             self._db.create_collection('meshes', validator=self._validationSchema)
             self._schemaValidated = True
-        return
+
+            # Re-insert the data
+            self.insert_data(meshes)
 
     # Load the given data into the db
     def insert_data(self, data):
@@ -114,12 +127,14 @@ class DatabaseManager:
         self.create_collection()
         print("Database purged successfully. (Took {:.2f} seconds)".format(time.time() - start))
 
+    # Return all mesh infos saved in the database except the global info
     def get_all(self):
-        return self._db.meshes.find()
-    
+        return self._db.meshes.find({})
+
     def get_all_by_category(self, shapeClass):
         return self._db.meshes.find({'class': shapeClass})
     
+    # Return all mesh infos saved in the database with extracted features and except the global info
     def get_all_with_extracted_features(self):
         return self._db.meshes.find({'D4': {'$exists': True}})
 
@@ -127,6 +142,10 @@ class DatabaseManager:
     def get_all_paths(self):
         return self._db.meshes.find({}, {'path': True, 'name': True, '_id': False})
 
+    # Runs the given function on all meshes in the db
+    def for_each(self, func):
+        for mesh in self.get_all():
+            self.update_one(func(mesh))
 
 def main():
     import load_meshes

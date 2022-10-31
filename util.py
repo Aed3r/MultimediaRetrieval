@@ -1,7 +1,5 @@
 import open3d as o3d
 import numpy as np
-import pyvista
-import pyacvd
 from pyvista import _vtk, PolyData
 
 # Calculate normal of the given face
@@ -118,6 +116,60 @@ def tetrahedron_volume(v1, v2, v3, v4):
     mixed_product = np.dot(a, np.cross(b, c))
     volume = (np.linalg.norm(mixed_product))/6
     return np.cbrt(volume)
+
+# returns the mean and standard deviation of the given single value features
+def get_single_features_mean_and_sigma(features):
+    mu = np.mean(features, axis=0)
+    sigma = np.std(features, axis=0)
+    
+    return mu, sigma
+
+# returns the mean and standard deviation of the single value features of the given meshes
+def get_single_features_mean_and_sigma_from_meshes(meshes):
+    features = []
+
+    for mesh in meshes:
+        # check that all features are present
+        if "surface_area" not in mesh or "volume" not in mesh or "compactness" not in mesh or "diameter" not in mesh or "eccentricity" not in mesh or "rectangularity" not in mesh:
+            continue
+
+        features.append([mesh[mesh['surface_area'], mesh['compactness'], mesh['volume'], mesh['diameter'], mesh['eccentricity'], mesh['rectangularity']]])
+
+    mu = np.mean(features, axis=0)
+    sigma = np.std(features, axis=0)
+    
+    return mu, sigma
+
+# z-score standardization
+def standardize(data, mu, sigma):
+    # fn = (f - favg)/fstd  prefered
+
+    result = []
+    n = 0
+    for i in data:
+        result.append(abs((i - mu[n]) / sigma[n]))   #abs
+        n += 1
+    return result
+
+def standardize_all(meshes):
+    features = []
+    res = []
+
+    for mesh in meshes:
+        # check that all features are present
+        if "surface_area" not in mesh or "volume" not in mesh or "compactness" not in mesh or "diameter" not in mesh or "eccentricity" not in mesh or "rectangularity" not in mesh:
+            continue
+
+        features.append([mesh[mesh['surface_area'], mesh['compactness'], mesh['volume'], mesh['diameter'], mesh['eccentricity'], mesh['rectangularity']]])
+        res.append(mesh['path'])
+
+    mu, sigma = get_single_features_mean_and_sigma(features)
+
+    standardized_features = []
+    for i in features:
+        standardized_features.append(standardize(i, mu, sigma))
+
+    return zip(res, standardized_features)
 
 if __name__ == "__main__":
     import load_meshes

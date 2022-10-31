@@ -6,6 +6,7 @@ import normalization
 import os
 import load_meshes
 import open3d as o3d
+import util
 
 dbmngr = database.DatabaseManager()
 database_length = 380
@@ -30,7 +31,7 @@ def matching_single_Feature(mesh, distance_type):
     # initialize an empty list
     single_Value_Feature_Vector = [[[] for i in range (2)] for i in range(database_length)]
     # combine path and 6 descriptors in to one 3-dimensional list
-    # [[[path] [S, C, V, D, E, R]]...[[path] [S, C, V, D, E, R]]]
+    # [(path, [S, C, V, D, E, R]), ..., (path, [S, C, V, D, E, R])]
     i = 0
     for mesh in meshes:
         single_Value_Feature_Vector[i][0] = mesh['path']
@@ -48,13 +49,14 @@ def matching_single_Feature(mesh, distance_type):
 
     # standardization
     i = 0
+    mu, sigma = util.get_single_features_mean_and_sigma(single_Value_Feature_Vectors)
     for vector in single_Value_Feature_Vector:
-        feature_vector_Standardized[i][1] = standardization(vector[1], single_Value_Feature_Vectors)
+        feature_vector_Standardized[i][1] = util.standardize(vector[1], mu, sigma)
         feature_vector_Standardized[i][0] = vector[0]
         i += 1
     print("Descriptors Standardized from DB:", feature_vector_Standardized)
 
-    loadedMesh_Standardized = standardization(loadedMesh_feature_vector, single_Value_Feature_Vectors)
+    loadedMesh_Standardized = util.standardize(loadedMesh_feature_vector, mu, sigma)
     print("LoadedMesh Standardized:", loadedMesh_Standardized)
 
     # calculate distance
@@ -134,7 +136,6 @@ def matching_histo_Feature(mesh, distance_type, descriptor):
 
     return dists
 
-
 def sort(name, dists, distance_type, k = 5):
     dists.sort(key=lambda x: float(x[1]), reverse=False)
     print("Sorted distance", dists)
@@ -146,19 +147,6 @@ def sort(name, dists, distance_type, k = 5):
             distance.append(d)
     distance = distance[:k]
     return distance
-
-
-# z-score standardization
-def standardization(data, data_all):
-    # fn = (f - favg)/fstd  prefered
-    mu = np.mean(data_all, axis=0)
-    sigma = np.std(data_all, axis=0)
-    result = []
-    n = 0
-    for i in data:
-        result.append(abs((i - mu[n]) / sigma[n]))   #abs
-        n += 1
-    return result
 
 
 # calculate the Euclidean Distance between feature vectors
@@ -189,7 +177,39 @@ def get_Earth_Mover_Distance(vector_1, vector_2):
     EMD = wasserstein_distance(vector_1, vector_2)
     return EMD
 
+def find_best_matches(mesh, k = 5):
+    # Normalize the input mesh
+    mesh = normalization.normalize(mesh)
 
+    # get features from the input (querying) mesh
+    features = ShapeDescriptors.extract_all_features(mesh)
+    singleValFeatures = features[1:7]
+    multiValFeatures = features[7:]
+
+    # get features from database
+    meshes = dbmngr.get_all_with_extracted_features()
+
+    # get mean and standard deviation of each feature from database
+    mu, sigma = util.get_single_features_mean_and_sigma_from_meshes(meshes)
+
+    # standardize the loaded mesh's features
+    features = util.standardize(singleValFeatures, mu, sigma)
+
+    # compare single value features using Cosine Distance
+    dists = [[[] for i in range(3)] for i in range(database_length)]
+    i = 0
+    for db_mesh in meshes:
+        # get the meshes features
+        dbSingleValFeatures =  [mesh['surface_area'], mesh['compactness'], mesh['volume'],
+                                mesh['diameter'], mesh['eccentricity'], mesh['rectangularity']]
+        dbMultiValFeatures = [mesh['A3'], mesh['D1'], mesh['D2'], mesh['D3'], mesh['D4']]
+
+        dists[i][0] = mesh["path"]
+        dists[i][1] = get_Cosine_Distance(singleValFeatures, dbSingleValFeatures)
+        dists[i][2] = get_Earth_Mover_Distance(multiValFeatures, dbMultiValFeatures)
+        i += 1
+
+    
 if __name__ == "__main__":
 
     # load a mesh for test

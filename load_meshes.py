@@ -363,10 +363,8 @@ def get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=200, 
         lbl = 'Loading info of ' + str(len(files)) + ' mesh'
     else:
         lbl = 'Loading ' + str(len(files)) + ' mesh'
-    if len(files) == 1:
-        lbl += '...'
-    else:
-        lbl += 'es...'
+    if not len(files) == 1:
+        lbl += 'es'
     
     for f in tqdm(files, desc=lbl, ncols=150):
         res = load_mesh(f[0], returnInfoOnly)

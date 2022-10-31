@@ -317,9 +317,9 @@ class MMRVISUALIZER:
             del mesh
             del geometry
 
-# Creates a thumbnail from the given mesh and returns the resulting image location
-# outputPath can be defined to save the image to the specified location
-def gen_thumbnail(mesh, outputPath=None):
+# Creates a thumbnail from the given meshes and returns the resulting image locations
+# outputDir can be defined to save the image to the specified directory, otherwise it will be saved to data/cache
+def gen_thumbnails(meshes, outputDir=None):
     renderer = rendering.OffscreenRenderer(int(WINDOWWIDTH * THUMBNAILSCALE), int(WINDOWHEIGHT * THUMBNAILSCALE))
     
     sunDir = [0.577, -0.577, -0.577]
@@ -343,35 +343,51 @@ def gen_thumbnail(mesh, outputPath=None):
     plasticMat.base_anisotropy = 0.0
     plasticMat.shader = "defaultLit"
 
-    if not "vertices" in mesh:
-        mesh = lm.load_mesh(mesh["path"], returnInfoOnly=False)
     geometry = o3d.geometry.TriangleMesh()
-    geometry.vertices = o3d.utility.Vector3dVector(mesh["vertices"])
-    geometry.triangles = o3d.utility.Vector3iVector(mesh["faces"])
-    geometry.compute_triangle_normals()
-    geometry.compute_vertex_normals()
+    outputPaths = []
 
-    renderer.scene.add_geometry("Mesh", geometry, plasticMat)
-
-    # Camera
-    bounds = renderer.scene.bounding_box
-    center = bounds.get_center()
-    renderer.setup_camera(60, center, center + [0, 0, 2], [0, 1, 0])
-
-    img = renderer.render_to_image()
-
-    if outputPath is not None:
-        o3d.io.write_image(outputPath, img, 9)
-    else:
-        # Check if "data/cache" exists
-        if not os.path.exists("data/cache"):
-            os.makedirs("data/cache")
+    for mesh in tqdm(meshes, desc="Generating thumbnails", ncols=150):
+        if not "vertices" in mesh:
+            mesh = lm.load_mesh(mesh["path"], returnInfoOnly=False)
         
-        # Save image to cache
-        outputPath = "data/cache/" + mesh["name"] + ".png"
-        o3d.io.write_image("data/cache/" + mesh["name"] + ".png", img, 9)
+        geometry.vertices = o3d.utility.Vector3dVector(mesh["vertices"])
+        geometry.triangles = o3d.utility.Vector3iVector(mesh["faces"])
+        geometry.compute_triangle_normals()
+        geometry.compute_vertex_normals()
 
-    return outputPath
+        renderer.scene.add_geometry("Mesh", geometry, plasticMat)
+
+        # Camera
+        bounds = renderer.scene.bounding_box
+        center = bounds.get_center()
+        renderer.setup_camera(60, center, center + [0, 0, 2], [0, 1, 0])
+
+        img = renderer.render_to_image()
+        renderer.scene.remove_geometry("Mesh")
+
+        if outputDir is not None:
+            # Check if "data/cache" exists
+            if not os.path.exists(outputDir):
+                os.makedirs(outputDir)
+
+            outputPath = outputDir
+        else:
+            # Check if "data/cache" exists
+            if not os.path.exists(THUMBNAILPATH):
+                os.makedirs(THUMBNAILPATH)
+
+            outputPath = THUMBNAILPATH
+        
+        if "class" in mesh:
+            outputPath = os.path.join(outputPath, mesh["class"])
+            if not os.path.exists(outputPath):
+                os.makedirs(outputPath)
+        
+        outputPath = os.path.join(outputPath, mesh["name"] + ".png")
+        o3d.io.write_image(outputPath, img, 9)
+        outputPaths.append({"name": mesh["name"], "path": mesh["path"], "thumbnailPath": outputPath})
+
+    return outputPaths
 
 def print_help():
     print("-- Mouse view control --")

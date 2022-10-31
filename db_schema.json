@@ -2,7 +2,7 @@
     "$jsonSchema": {
         "bsonType": "object",
         "additionalProperties": true,
-        "required": ["path"],
+        "required": ["_id"],
         "properties": {
             "_id": {},
             "path": {
@@ -93,6 +93,8 @@
                 "maxItems": 10,
                 "additionalProperties": false,
                 "description": "Distribution of the cube root of volume of tetrahedron formed by 4 random vertices"
+            }, "thumbnailPath": {
+                "bsonType": "string"
             }
         }
     }
