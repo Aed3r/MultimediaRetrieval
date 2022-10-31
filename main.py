@@ -1,3 +1,4 @@
+from lib2to3.pgen2.token import NUMBER
 import database as db
 import load_meshes as lm
 import normalization as nrmlz
@@ -5,7 +6,6 @@ import sys
 import ShapeDescriptors as sd
 import visualizer as vis
 import time
-import numpy as np
 import util
 
 dbmngr = db.DatabaseManager()
@@ -58,24 +58,30 @@ def extract_features():
 
     if normalized_meshes == []:
         normalized_meshes = lm.get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=-1, returnInfoOnly=False)
-    
-        res = sd.extract_all_features_from_meshes(normalized_meshes)
+
+    res = sd.extract_all_features_from_meshes(normalized_meshes)
 
     dbmngr.update_all(res)
 
     print(f"Features extracted and saved successfully. ({round(time.time() - start)}s)")
 
 def gen_feature_plots():
-    meshes = lm.get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=-1, returnInfoOnly=False)
-    sd.genFeaturePlots(meshes)
+    if normalized_meshes == []:
+        normalized_meshes = lm.get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=-1, returnInfoOnly=False)
+    
+    sd.genFeaturePlots(normalized_meshes)
 
 def gen_thumbnails():
     global dbmngr
 
     print("Generating thumbnails...")
     start = time.time()
-
+    
     meshes = dbmngr.get_all()
+    if not meshes.alive:
+        print("No meshes found in the db. Run 'python main.py gendb' first.")
+        return
+
     outputPaths = vis.gen_thumbnails(meshes)
 
     dbmngr.update_all(outputPaths)
@@ -100,6 +106,10 @@ def standardize_db():
     start = time.time()
 
     meshes = dbmngr.get_all_with_extracted_features()
+    if not meshes.alive:
+        print("No meshes with extracted features found in the db. Run 'python main.py extract' first.")
+        return
+
     meshes = util.standardize_all(meshes)
     dbmngr.update_all(meshes)
 

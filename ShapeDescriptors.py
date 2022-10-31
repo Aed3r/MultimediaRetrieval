@@ -8,6 +8,7 @@ import util
 import numpy as np
 import normalization
 import matplotlib.pyplot as plt
+from tqdm.contrib.concurrent import process_map
 
 FEATUREPLOTSPATH = "data/featurePlots/"
 
@@ -308,11 +309,7 @@ def extract_all_features(mesh):
     return res
 
 def extract_all_features_from_meshes(meshes):
-    res = []
-    for mesh in tqdm(meshes, desc="Extracting features", ncols=150):
-        if "D4" not in mesh:
-            res.append(extract_all_features(mesh))
-    return res
+    return process_map(extract_all_features, meshes, desc="Extracting features", ncols=150)
 
 if __name__ == '__main__':
     data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, fromNORM=False, randomSample=2, returnInfoOnly=False)

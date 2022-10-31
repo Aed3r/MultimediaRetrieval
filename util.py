@@ -133,7 +133,7 @@ def get_single_features_mean_and_sigma_from_meshes(meshes):
         if "surface_area" not in mesh or "volume" not in mesh or "compactness" not in mesh or "diameter" not in mesh or "eccentricity" not in mesh or "rectangularity" not in mesh:
             continue
 
-        features.append([mesh[mesh['surface_area'], mesh['compactness'], mesh['volume'], mesh['diameter'], mesh['eccentricity'], mesh['rectangularity']]])
+        features.append([mesh['surface_area'], mesh['compactness'], mesh['volume'], mesh['diameter'], mesh['eccentricity'], mesh['rectangularity']])
 
     mu = np.mean(features, axis=0)
     sigma = np.std(features, axis=0)

@@ -133,6 +133,10 @@ class DatabaseManager:
     def get_all(self):
         return self._db.meshes.find({})
 
+    # Return the mesh with the given path
+    def get_by_path(self, path):
+        return self._db.meshes.find({'path': path})[0]
+
     def get_all_by_category(self, shapeClass):
         return self._db.meshes.find({'class': shapeClass})
     

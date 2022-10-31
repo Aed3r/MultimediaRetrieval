@@ -179,13 +179,16 @@ def get_Earth_Mover_Distance(vector_1, vector_2):
     return EMD
 
 def find_best_matches(mesh, k = 5):
+    global dbmngr
+
     # Normalize the input mesh
     mesh = normalization.normalize(mesh)
 
     # get features from the input (querying) mesh
     features = ShapeDescriptors.extract_all_features(mesh)
-    singleValFeatures = features[1:7]
-    multiValFeatures = features[7:]
+    singleValFeatures = [features['surface_area'], features['compactness'], features['volume'],
+                         features['diameter'], features['eccentricity'], features['rectangularity']]
+    multiValFeatures = [features['A3'], features['D1'], features['D2'], features['D3'], features['D4']]
 
     # get features from database
     meshes = dbmngr.get_all_with_extracted_features()
@@ -193,8 +196,11 @@ def find_best_matches(mesh, k = 5):
     # get mean and standard deviation of each feature from database
     mu, sigma = util.get_single_features_mean_and_sigma_from_meshes(meshes)
 
+    # get features from database (cursor refresh)
+    meshes = dbmngr.get_all_with_extracted_features()
+
     # standardize the loaded mesh's features
-    features = util.standardize(singleValFeatures, mu, sigma)
+    singleValFeatures = util.standardize(singleValFeatures, mu, sigma)
 
     # compare single value features using Cosine Distance
     dists = [[[] for i in range(2)] for i in range(database_length)]
@@ -205,23 +211,23 @@ def find_best_matches(mesh, k = 5):
             continue
 
         # get the meshes features
-        dbSingleValFeatures =  [mesh['surface_area'], mesh['compactness'], mesh['volume'],
-                                mesh['diameter'], mesh['eccentricity'], mesh['rectangularity']]
-        dbMultiValFeatures = [mesh['A3'], mesh['D1'], mesh['D2'], mesh['D3'], mesh['D4']]
+        dbSingleValFeatures = [db_mesh['surface_area'], db_mesh['compactness'], db_mesh['volume'],
+                               db_mesh['diameter'], db_mesh['eccentricity'], db_mesh['rectangularity']]
+        dbMultiValFeatures = [db_mesh['A3'], db_mesh['D1'], db_mesh['D2'], db_mesh['D3'], db_mesh['D4']]
 
-        dists[i][0] = i
+        dists[i][0] = db_mesh["path"]
         dists[i][1] = get_Cosine_Distance(singleValFeatures, dbSingleValFeatures) * SCALARWEIGHT
         for j in range(len(multiValFeatures)):
             dists[i][1] += get_Earth_Mover_Distance(multiValFeatures[j], dbMultiValFeatures[j]) * VECTORWEIGHT
         i += 1
 
     # sort the distances
-    dists.sort(key=lambda x: float(x[1]), reverse=False)
+    dists.sort(key=lambda x: x[1])
     dists = dists[:k]
 
     res = []
     for d in dists:
-        res.append(meshes[d[0]])
+        res.append(dbmngr.get_by_path(d[0]))
 
     return res
 
