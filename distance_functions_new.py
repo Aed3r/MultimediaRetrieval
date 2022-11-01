@@ -10,8 +10,13 @@ import util
 
 dbmngr = database.DatabaseManager()
 database_length = 380
-SCALARWEIGHT = 0.25
-VECTORWEIGHT = 0.75
+# SCALARWEIGHT = 0.25
+# VECTORWEIGHT = 0.75
+SCALARWEIGHT = 0.25/6
+VECTORWEIGHT = 0.75/5
+# SCALARWEIGHT = 0.25/6
+# VECTORWEIGHT = [0.05, 0.05, 0.25, 0.25, 0.15]
+
 
 def matching_single_Feature(mesh, distance_type):
     # get features from the input (querying) mesh
@@ -26,7 +31,6 @@ def matching_single_Feature(mesh, distance_type):
     # build feature vector of the querying mesh
     loadedMesh_feature_vector = [SurfaceAreaLoad, CompactnessLoad, VolumeLoad, DiameterLoad,
                                  EccentricityLoad, RectangularityLoad]
-
     # get features from database
     meshes = dbmngr.get_all_with_extracted_features()
 
@@ -204,10 +208,17 @@ def find_best_matches(mesh, k = 5):
 
     # compare single value features using Cosine Distance
     dists = [[[] for i in range(2)] for i in range(database_length)]
+    # D1 = [[[] for i in range(5)] for i in range(database_length)]
+    meshpath = ''.join(mesh['path'])
+    meshpath = meshpath.split("/")
+
     i = 0
     for db_mesh in meshes:
         # Check if the mesh is the querying mesh, remove it if it is
-        if db_mesh['path'] == mesh['path']:
+        dbpath = ''.join(db_mesh['path'])
+        dbpath = dbpath.split("\\")
+        if dbpath[-1] == meshpath[-1]:
+            #print(db_mesh['path'], mesh['path'])
             continue
 
         # get the meshes features
@@ -215,13 +226,28 @@ def find_best_matches(mesh, k = 5):
                                db_mesh['diameter'], db_mesh['eccentricity'], db_mesh['rectangularity']]
         dbMultiValFeatures = [db_mesh['A3'], db_mesh['D1'], db_mesh['D2'], db_mesh['D3'], db_mesh['D4']]
 
+        dbSingleValFeatures = util.standardize(dbSingleValFeatures, mu, sigma)
         dists[i][0] = db_mesh["path"]
         dists[i][1] = get_Cosine_Distance(singleValFeatures, dbSingleValFeatures) * SCALARWEIGHT
         for j in range(len(multiValFeatures)):
             dists[i][1] += get_Earth_Mover_Distance(multiValFeatures[j], dbMultiValFeatures[j]) * VECTORWEIGHT
+        # try Distance weighting
+        # dists[i][1] = get_Euclidean_Distance(singleValFeatures, dbSingleValFeatures)
+        # for j in range(len(multiValFeatures)):
+        #      D1[i][j] = float(get_Earth_Mover_Distance(multiValFeatures[j], dbMultiValFeatures[j]))
+
         i += 1
 
-    # sort the distances
+    # standardize the distance
+    # dmu = np.mean(D1, axis=0) #why it doesn't work?
+    # dsigma = np.std(D1, axis=0)
+    # i=0
+    # for n in D1:
+    #     dists[i][1] += util.standardize(n, dmu, dsigma)
+    #     i += 1
+    # print("dists", dists)
+
+    #sort the distances
     dists.sort(key=lambda x: x[1])
     dists = dists[:k]
 
@@ -234,49 +260,51 @@ def find_best_matches(mesh, k = 5):
 if __name__ == "__main__":
 
     # load a mesh for test
-    name = "Ant/85.off"
+    name = "Fish/222.off"
     path = os.path.join("data/LabeledDB_new/", name)
     mesh = load_meshes.load_OFF(path)
-    # name = name.split("/")
+    #name = name.split("/")
 
     # # single value features test
-    # # Euclidean_dists = matching_single_Feature(mesh, 'Euclidean')
-    # # paths = sort(name[-1], Euclidean_dists, distance_type='Euclidean', k = 5)
-    # # Cosine_dists = matching_single_Feature(mesh, 'Cosine')
-    # # paths = sort(name[-1], Cosine_dists, distance_type='Euclidean', k=5)
+    # Euclidean_dists = matching_single_Feature(mesh, 'Euclidean')
+    # paths = sort(name[-1], Euclidean_dists, distance_type='Euclidean', k = 5)
+    # Cosine_dists = matching_single_Feature(mesh, 'Cosine')
+    # paths = sort(name[-1], Cosine_dists, distance_type='Euclidean', k=5)
     # # EMD_dists = matching_single_Feature(mesh, 'EMD')
     # # paths = sort(name[-1], EMD_dists, distance_type='EMD', k=5)
     # # print("All distance except for the querying one:", Cosine_dists)
 
     # # # Histogram features test
-    # # EMD_histo_dist = matching_histo_Feature(mesh, 'EMD', 'A3')
-    # # paths = sort(name[-1], EMD_histo_dist, distance_type='A3', k=5)
-    # # EMD_histo_dist = matching_histo_Feature(mesh, 'EMD', 'D1')
-    # # paths = sort(name[-1], EMD_histo_dist, distance_type='D1', k=5)
+    # EMD_histo_dist = matching_histo_Feature(mesh, 'EMD', 'A3')
+    # paths = sort(name[-1], EMD_histo_dist, distance_type='A3', k=5)
+    # EMD_histo_dist = matching_histo_Feature(mesh, 'EMD', 'D1')
+    # paths = sort(name[-1], EMD_histo_dist, distance_type='D1', k=5)
     # EMD_histo_dist = matching_histo_Feature(mesh, 'EMD', 'D2')
     # paths = sort(name[-1], EMD_histo_dist, distance_type='D2', k=5)
-    # # EMD_histo_dist = matching_histo_Feature(mesh, 'EMD', 'D3')
-    # # paths = sort(name[-1], EMD_histo_dist, distance_type='D3', k=5)
-    # # EMD_histo_dist = matching_histo_Feature(mesh, 'EMD', 'D4')
-    # # paths = sort(name[-1], EMD_histo_dist, distance_type='D4', k=5)
+    # EMD_histo_dist = matching_histo_Feature(mesh, 'EMD', 'D3')
+    # paths = sort(name[-1], EMD_histo_dist, distance_type='D3', k=5)
+    # EMD_histo_dist = matching_histo_Feature(mesh, 'EMD', 'D4')
+    # paths = sort(name[-1], EMD_histo_dist, distance_type='D4', k=5)
     # print("All distance except for the querying one", EMD_histo_dist)
-
     # print("Retrieved", paths)
-    # for i in paths:
-    #     i = "".join(i[0])
-    #     name = i.lstrip(i[:16])
-    #     i = os.path.join("data/LabeledDB_new/", name)
-    #     meshi = load_meshes.load_OFF(i)
-    #     vertices = meshi['vertices']
-    #     faces = meshi['faces']
-    #     meshi = o3d.geometry.TriangleMesh()
-    #     meshi.vertices = o3d.utility.Vector3dVector(vertices)
-    #     meshi.triangles = o3d.utility.Vector3iVector(faces)
-    #     meshi.paint_uniform_color([1, 0.706, 0])
-    #     meshi.compute_vertex_normals()
-    #     o3d.visualization.draw_geometries([meshi])
 
     best = find_best_matches(mesh, k=5)
 
     for x in best:
         print(x["name"] + "-" + x["path"] + "-" + x["class"])
+
+    for i in best:
+    #for i in paths:
+        # i = "".join(i[0])
+        # name = i.lstrip(i[:16])
+        name = i["class"]+ "/" + i["name"]
+        i = os.path.join("data/LabeledDB_new/", name)
+        meshi = load_meshes.load_OFF(i)
+        vertices = meshi['vertices']
+        faces = meshi['faces']
+        meshi = o3d.geometry.TriangleMesh()
+        meshi.vertices = o3d.utility.Vector3dVector(vertices)
+        meshi.triangles = o3d.utility.Vector3iVector(faces)
+        meshi.paint_uniform_color([1, 0.706, 0])
+        meshi.compute_vertex_normals()
+        o3d.visualization.draw_geometries([meshi])
