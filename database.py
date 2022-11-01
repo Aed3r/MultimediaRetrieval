@@ -4,9 +4,8 @@ from pymongo.errors import CollectionInvalid
 import pymongo
 from collections import OrderedDict
 import json
-import os
-import load_meshes as lm
 from tqdm import tqdm
+from bson.json_util import dumps
 
 class DatabaseManager:
     def __init__(self):
@@ -152,6 +151,27 @@ class DatabaseManager:
     def for_each(self, func):
         for mesh in self.get_all():
             self.update_one(func(mesh))
+
+    def export_db(self, path):
+        print("Exporting database to {}...".format(path))
+        start = time.time()
+        meshes = self._db.meshes.find({}, {'_id': False})
+        with open(path, 'w') as f:
+            f.write('[')
+            for mesh in tqdm(meshes, desc="Exporting database", ncols=150, total=self.get_mesh_count()):
+                f.write(dumps(mesh))
+                if meshes.alive:
+                    f.write(',')
+            f.write(']')
+        print("Database exported successfully. (Took {:.2f} seconds)".format(time.time() - start))
+
+    def import_db(self, path):
+        print("Importing database from {}...".format(path))
+        start = time.time()
+        with open(path, 'r') as f:
+            data = json.load(f)
+        self.insert_data(data)
+        print("Database imported successfully. (Took {:.2f} seconds)".format(time.time() - start))
 
 def main():
     import load_meshes

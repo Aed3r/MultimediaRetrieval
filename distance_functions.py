@@ -7,6 +7,7 @@ import os
 import load_meshes
 import open3d as o3d
 import util
+from tqdm import tqdm
 
 dbmngr = database.DatabaseManager()
 database_length = 380
@@ -210,14 +211,17 @@ def find_best_matches(mesh, k = 5):
     dists = [[[] for i in range(2)] for i in range(database_length)]
 
     i = 0
-    for db_mesh in meshes:
+    for db_mesh in tqdm(meshes, desc='comparing meshes', ncols=150, total=dbmngr.get_mesh_count()):
         # Check if the mesh is the querying mesh, remove it if it is
         if db_mesh["name"] == mesh["name"]:
             continue
 
+        if "surface_area_std" not in db_mesh:
+            raise Exception("Error: the database meshes have not been standardized. Please run `python3 main.py standardizeDB` first.")
+
         # get the meshes features
-        dbSingleValFeatures = [db_mesh['surface_area'], db_mesh['compactness'], db_mesh['volume'],
-                               db_mesh['diameter'], db_mesh['eccentricity'], db_mesh['rectangularity']]
+        dbSingleValFeatures = [db_mesh['surface_area_std'], db_mesh['compactness_std'], db_mesh['volume_std'],
+                               db_mesh['diameter_std'], db_mesh['eccentricity_std'], db_mesh['rectangularity_std']]
         dbMultiValFeatures = [db_mesh['A3'], db_mesh['D1'], db_mesh['D2'], db_mesh['D3'], db_mesh['D4']]
 
         #dbSingleValFeatures = util.standardize(dbSingleValFeatures, mu, sigma)
@@ -248,6 +252,7 @@ def find_best_matches(mesh, k = 5):
     res = []
     for d in dists:
         res.append(dbmngr.get_by_path(d[0]))
+        print(d[0])
 
     return res
 

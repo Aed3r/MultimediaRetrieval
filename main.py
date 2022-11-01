@@ -1,4 +1,6 @@
 from lib2to3.pgen2.token import NUMBER
+import os
+from traceback import print_stack
 import database as db
 import load_meshes as lm
 import normalization as nrmlz
@@ -10,6 +12,8 @@ import util
 
 dbmngr = db.DatabaseManager()
 normalized_meshes = []
+
+DEFAULTDBSTORE = os.path.join("data", "cache", "db.json")
 
 # Loads all the meshes from the 'meshes' folder and saves them to the db
 def gen_database():
@@ -119,6 +123,22 @@ def standardize_db():
 
     print(f"Db standardized successfully. ({round(time.time() - start)}s)")
 
+def export_db():
+    if len(sys.argv) > 2:
+        export_path = sys.argv[2]
+    else:
+        export_path = DEFAULTDBSTORE
+    
+    dbmngr.export_db(export_path)
+
+def import_db():
+    if len(sys.argv) > 2:
+        import_path = sys.argv[2]
+    else:
+        import_path = DEFAULTDBSTORE
+    
+    dbmngr.import_db(import_path)
+
 def main():
     global dbmngr
 
@@ -161,6 +181,10 @@ def main():
             update_db_schema()
         elif sys.argv[1].lower() == "standardizedb":
             standardize_db()
+        elif sys.argv[1].lower() == "exportdb":
+            export_db()
+        elif sys.argv[1].lower() == "importdb":
+            import_db()
         elif sys.argv[1].lower() == "help":
             print("Available commands:")
             print("gen/genLPSB: Normalizes and generates the database using all the meshes in the Labeled PSB dataset. Extracts features and generates thumbnails")
@@ -176,6 +200,8 @@ def main():
             print("genThumbnails: Generates thumbnails of the normalized meshes")
             print("updateDBSchema: Updates the database schema")
             print("standardizeDB: Standardizes the single features of all the meshes in the database")
+            print("exportDB: Exports the database to a JSON file. If no path is specified, the default path is 'data/cache/db.json'")
+            print("importDB: Imports the database from a JSON file. If no path is specified, the default path is 'data/cache/db.json'")
             print("help: Prints this help message")
         else:
             print("Invalid argument. Use 'python main.py help' to see the available commands.")

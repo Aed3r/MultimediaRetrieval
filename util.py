@@ -164,16 +164,21 @@ def standardize_all(meshes):
         if "surface_area" not in mesh or "volume" not in mesh or "compactness" not in mesh or "diameter" not in mesh or "eccentricity" not in mesh or "rectangularity" not in mesh:
             continue
 
-        features.append([mesh[mesh['surface_area'], mesh['compactness'], mesh['volume'], mesh['diameter'], mesh['eccentricity'], mesh['rectangularity']]])
-        res.append(mesh['path'])
+        features.append([mesh['surface_area'], mesh['compactness'], mesh['volume'], mesh['diameter'], mesh['eccentricity'], mesh['rectangularity']])
+        res.append({"path": mesh['path']})
 
     mu, sigma = get_single_features_mean_and_sigma(features)
 
-    standardized_features = []
-    for i in features:
-        standardized_features.append(standardize(i, mu, sigma))
-
-    return zip(res, standardized_features)
+    for i in range(len(res)):
+        standardized_feature = standardize(features[i], mu, sigma)
+        res[i]["surface_area_std"] = standardized_feature[0]
+        res[i]["compactness_std"] = standardized_feature[1]
+        res[i]["volume_std"] = standardized_feature[2]
+        res[i]["diameter_std"] = standardized_feature[3]
+        res[i]["eccentricity_std"] = standardized_feature[4]
+        res[i]["rectangularity_std"] = standardized_feature[5]
+    
+    return res
 
 if __name__ == "__main__":
     import load_meshes
