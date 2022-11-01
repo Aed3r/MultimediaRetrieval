@@ -29,7 +29,7 @@ class App(tk.Tk):
             return
 
         self.mesh = lm.load_mesh(filename, returnInfoOnly=False)
-        img = Image.open(vis.gen_thumbnail(self.mesh))
+        img = Image.open(vis.gen_thumbnails(self.mesh)[0])
         img = img.resize((250, 250), Image.ANTIALIAS)
         img = ImageTk.PhotoImage(img)
         panel = Label(self, image=img)
@@ -51,7 +51,7 @@ class App(tk.Tk):
             if "thumbnailPath" in resMesh:
                 img = Image.open(resMesh["thumbnailPath"])
             else:
-                img = Image.open(vis.gen_thumbnail(resMesh))
+                img = Image.open(vis.gen_thumbnails(resMesh)[0])
             img = img.resize((250, 250), Image.ANTIALIAS)
             img = ImageTk.PhotoImage(img)
             panel = Label(self.horiz_layout, image=img)
