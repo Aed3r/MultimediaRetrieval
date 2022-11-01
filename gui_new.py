@@ -9,6 +9,7 @@ import visualizer as vis
 import open3d as o3d
 import load_meshes as lm
 from PIL import ImageTk, Image
+import distance_functions as df
 
 class App(tk.Tk):
     def __init__(self):
@@ -27,13 +28,35 @@ class App(tk.Tk):
         if not filename:
             return
 
-        mesh = lm.load_mesh(filename, returnInfoOnly=False)
-        img = Image.open(vis.gen_thumbnail(mesh))
+        self.mesh = lm.load_mesh(filename, returnInfoOnly=False)
+        img = Image.open(vis.gen_thumbnail(self.mesh))
         img = img.resize((250, 250), Image.ANTIALIAS)
         img = ImageTk.PhotoImage(img)
         panel = Label(self, image=img)
         panel.image = img
         panel.pack()
+
+        # Load a "analyze" button
+        self.button = Button(self, text="Analyze", command=self.on_analyze_click)
+        self.button.pack()
+
+    def on_analyze_click(self):
+        res = df.find_best_matches(self.mesh, 5)
+
+        # Create a horizontal layout
+        self.horiz_layout = ttk.Frame(self)
+        self.horiz_layout.pack(fill=BOTH, expand=True)
+
+        for resMesh in res:
+            if "thumbnailPath" in resMesh:
+                img = Image.open(resMesh["thumbnailPath"])
+            else:
+                img = Image.open(vis.gen_thumbnail(resMesh))
+            img = img.resize((250, 250), Image.ANTIALIAS)
+            img = ImageTk.PhotoImage(img)
+            panel = Label(self.horiz_layout, image=img)
+            panel.image = img
+            panel.pack(side=LEFT)
 
     def run(self):
         self.mainloop()

@@ -88,6 +88,10 @@ def random_vertices(mesh, count):
 def angle_between(v1, v2, v3):
     v1 = np.asarray(v1) - np.asarray(v2)
     v2 = np.asarray(v3) - np.asarray(v2)
+
+    if np.linalg.norm(v1) == 0 or np.linalg.norm(v2) == 0:
+        return 0
+
     return np.arccos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
 # Returns the distance between the 2 given vertices

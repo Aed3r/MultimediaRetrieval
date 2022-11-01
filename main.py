@@ -59,6 +59,10 @@ def extract_features():
     if normalized_meshes == []:
         normalized_meshes = lm.get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=-1, returnInfoOnly=False)
 
+    if dbmngr.get_mesh_count() == 0:
+        print("No meshes found in the db. Run 'python main.py gendb' first.")
+        return
+
     res = sd.extract_all_features_from_meshes(normalized_meshes)
 
     dbmngr.update_all(res)
@@ -148,6 +152,7 @@ def main():
             print(f'{dbmngr.get_mesh_count_by_category(sys.argv[2])} meshes with the category {sys.argv[2]}')
         elif sys.argv[1].lower() == "extract":
             extract_features()
+            standardize_db()
         elif sys.argv[1].lower() == "genfeatureplots":
             gen_feature_plots()
         elif sys.argv[1].lower() == "genthumbnails":
@@ -173,7 +178,7 @@ def main():
             print("standardizeDB: Standardizes the single features of all the meshes in the database")
             print("help: Prints this help message")
         else:
-            print("Invalid argument")
+            print("Invalid argument. Use 'python main.py help' to see the available commands.")
     else:
         print("No argument provided")
         print("Use 'python main.py help' to see the available commands")
