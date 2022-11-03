@@ -289,9 +289,13 @@ def genFeaturePlots(meshes, doNormalization=False):
     
     print(f"Feature plots generated in {time.time() - startTime} seconds")
 
-def extract_all_features(mesh):
-    res = {}
-    res["path"] = mesh["path"]
+def extract_all_features(mesh, returnFullMesh=False):
+    if returnFullMesh:
+        res = mesh
+    else:
+        res = {}
+        res["path"] = mesh["path"]
+
     try:
         res["volume"] = get_Volume(mesh)
         res["surface_area"] = get_Surface_Area(mesh)

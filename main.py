@@ -110,7 +110,7 @@ def update_db_schema():
 def standardize_db():
     global dbmngr
 
-    print("Standardizing db...")
+    print("Standardizing database features...")
     start = time.time()
 
     meshes = dbmngr.get_all_with_extracted_features()
@@ -121,7 +121,7 @@ def standardize_db():
     meshes = util.standardize_all(meshes)
     dbmngr.update_all(meshes)
 
-    print(f"Db standardized successfully. ({round(time.time() - start)}s)")
+    print(f"Database features successfully standardized. ({round(time.time() - start)}s)")
 
 def export_db():
     if len(sys.argv) > 2:

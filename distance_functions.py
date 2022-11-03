@@ -1,3 +1,4 @@
+import time
 import numpy as np
 from scipy.stats import wasserstein_distance
 import database
@@ -183,35 +184,43 @@ def get_Earth_Mover_Distance(vector_1, vector_2):
     EMD = wasserstein_distance(vector_1, vector_2)
     return EMD
 
+# Uses the loaded meshe's features to find the k closest matches in the database (in theory..)
+# Assumes the mesh already has features extracted, not necessarily standardized though
+# Use k to specify how many results to return
 def find_best_matches(mesh, k = 5):
     global dbmngr
 
-    # Normalize the input mesh
-    mesh = normalization.normalize(mesh)
+    print("Finding best matches for mesh: ", mesh["name"])
 
-    # get features from the input (querying) mesh
-    features = ShapeDescriptors.extract_all_features(mesh)
-    singleValFeatures = [features['surface_area'], features['compactness'], features['volume'],
-                         features['diameter'], features['eccentricity'], features['rectangularity']]
-    multiValFeatures = [features['A3'], features['D1'], features['D2'], features['D3'], features['D4']]
+    singleValFeatures = [mesh['surface_area'], mesh['compactness'], mesh['volume'],
+                         mesh['diameter'], mesh['eccentricity'], mesh['rectangularity']]
+    multiValFeatures = [mesh['A3'], mesh['D1'], mesh['D2'], mesh['D3'], mesh['D4']]
 
     # get features from database
     meshes = dbmngr.get_all_with_extracted_features()
 
     # get mean and standard deviation of each feature from database
+    print("Calculating mean and standard deviation of database features...")
+    start = time.time()
     mu, sigma = util.get_single_features_mean_and_sigma_from_meshes(meshes)
+    end = time.time()
+    print("Calculating mean and standard deviation of database features done in ", end - start, " seconds")
 
     # get features from database (cursor refresh)
     meshes = dbmngr.get_all_with_extracted_features()
 
     # standardize the loaded mesh's features
+    print("Standardizing the loaded meshe's single value features...")
+    start = time.time()
     singleValFeatures = util.standardize(singleValFeatures, mu, sigma)
+    end = time.time()
+    print("Standardizing the loaded meshe's single value features done in ", end - start, " seconds")
 
     # compare single value features using Cosine Distance
     dists = [[[] for i in range(2)] for i in range(database_length)]
 
     i = 0
-    for db_mesh in tqdm(meshes, desc='comparing meshes', ncols=150, total=dbmngr.get_mesh_count()):
+    for db_mesh in tqdm(meshes, desc='Comparing meshes', ncols=150, total=dbmngr.get_mesh_count()):
         # Check if the mesh is the querying mesh, remove it if it is
         if db_mesh["name"] == mesh["name"]:
             continue
@@ -250,9 +259,11 @@ def find_best_matches(mesh, k = 5):
     dists = dists[:k]
 
     res = []
-    for d in dists:
-        res.append(dbmngr.get_by_path(d[0]))
-        print(d[0])
+    print("Results:")
+    for i in range(k):
+        res.append(dbmngr.get_by_path(dists[i][0]))
+        res[i]["distance"] = dists[i][1]
+        print(" #" + str(i + 1) + " " + res[i]["name"] + " distance:" + str(dists[i][1]))
 
     return res
 
@@ -287,6 +298,8 @@ if __name__ == "__main__":
     # print("All distance except for the querying one", EMD_histo_dist)
     # print("Retrieved", paths)
 
+    mesh = normalization.normalize(mesh)
+    mesh = ShapeDescriptors.extract_all_features(mesh, True)
     best = find_best_matches(mesh, k=5)
 
     for x in best:
