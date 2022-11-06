@@ -187,6 +187,8 @@ if __name__ == "__main__":
     meshes = dbmngr.get_all_with_extracted_features()
     dblabel = []
     for mesh in meshes:
+        if "TruthTable" not in mesh:
+            raise Exception("Error: No TruthTable in database. Please run getTruthTable() first.")
         dblabel.append(mesh['class'])
 
     # get all label in db
