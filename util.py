@@ -1,6 +1,7 @@
 import open3d as o3d
 import numpy as np
 from pyvista import _vtk, PolyData
+from scipy.stats import wasserstein_distance
 
 # Calculate normal of the given face
 def calculate_face_normal(face, vertices):
@@ -179,6 +180,50 @@ def standardize_all(meshes):
         res[i]["rectangularity_std"] = standardized_feature[5]
     
     return res
+
+
+# calculate the Euclidean Distance between feature vectors
+# formula: d(A, B) = square root of sum((ai-bi)^2), i = 1, 2, ..., n
+def get_Euclidean_Distance(vector_1, vector_2):
+    # transform input feature vectors into numpy.ndarray if they are not numpy.ndarray type
+    if (type(vector_1) != 'numpy.ndarray' and type(vector_2) != 'numpy.ndarray'):
+        vector_1 = np.asarray(vector_1)
+        vector_2 = np.asarray(vector_2)  
+    Euclidean_distance = np.sqrt(np.square(vector_1 - vector_2).sum())
+    return Euclidean_distance
+
+
+def get_Cosine_Distance(vector_1, vector_2):
+    # transform input feature vectors into numpy.ndarray if they are not numpy.ndarray type
+    if (type(vector_1) != 'numpy.ndarray' and type(vector_2) != 'numpy.ndarray'):
+        vector_1 = np.asarray(vector_1)
+        vector_2 = np.asarray(vector_2) 
+
+    Cosine_distance = (float(np.dot(vector_1, vector_2)) / (np.linalg.norm(vector_1) * np.linalg.norm(vector_2)))
+
+    Cosine_distance = abs(1 - Cosine_distance)
+    return Cosine_distance
+
+
+def get_Earth_Mover_Distance(vector_1, vector_2):
+    EMD = wasserstein_distance(vector_1, vector_2)
+    return EMD
+
+def get_feature_vector_from_mesh(mesh):
+    try:
+        if "surface_area_std" in mesh:
+            v = [mesh["surface_area_std"], mesh["compactness_std"], mesh["volume_std"], mesh["diameter_std"], mesh["eccentricity_std"], mesh["rectangularity_std"]]
+        else:
+            v = [mesh["surface_area"], mesh["compactness"], mesh["volume"], mesh["diameter"], mesh["eccentricity"], mesh["rectangularity"]]
+        multiValue = [mesh['A3'], mesh['D1'], mesh['D2'], mesh['D3'], mesh['D4']]
+
+        for x in multiValue:
+            for y in x:
+                v.append(y)
+
+        return v
+    except:
+        return None
 
 if __name__ == "__main__":
     import load_meshes

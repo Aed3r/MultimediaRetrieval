@@ -9,6 +9,7 @@ import ShapeDescriptors as sd
 import visualizer as vis
 import time
 import util
+import ann_search as ann
 
 dbmngr = db.DatabaseManager()
 normalized_meshes = []
@@ -139,6 +140,21 @@ def import_db():
     
     dbmngr.import_db(import_path)
 
+def create_ann():
+    global dbmngr
+
+    print("Creating ANN index...")
+    start = time.time()
+
+    meshes = dbmngr.get_all_with_extracted_features()
+    if not meshes.alive:
+        print("No meshes with extracted features found in the db. Run 'python main.py extract' first.")
+        return
+
+    ann.create_ann(meshes)
+
+    print(f"ANN index created successfully. ({round(time.time() - start)}s)")
+
 def main():
     global dbmngr
 
@@ -150,12 +166,14 @@ def main():
             gen_thumbnails()
             extract_features()
             standardize_db()
+            create_ann()
         elif sys.argv[1] == "genprin":
             save_normalize_meshes(fromPRIN=True)
             gen_database()
             gen_thumbnails()
             extract_features()
             standardize_db()
+            create_ann()
         elif sys.argv[1].lower() == "gendb":
             gen_database()
         elif sys.argv[1].lower() == "normlpsb":
@@ -185,6 +203,8 @@ def main():
             export_db()
         elif sys.argv[1].lower() == "importdb":
             import_db()
+        elif sys.argv[1].lower() == "createann":
+            create_ann()
         elif sys.argv[1].lower() == "help":
             print("Available commands:")
             print("gen/genLPSB: Normalizes and generates the database using all the meshes in the Labeled PSB dataset. Extracts features and generates thumbnails")
@@ -202,6 +222,7 @@ def main():
             print("standardizeDB: Standardizes the single features of all the meshes in the database")
             print("exportDB: Exports the database to a JSON file. If no path is specified, the default path is 'data/cache/db.json'")
             print("importDB: Imports the database from a JSON file. If no path is specified, the default path is 'data/cache/db.json'")
+            print("createANN: Creates the ANN index")
             print("help: Prints this help message")
         else:
             print("Invalid argument. Use 'python main.py help' to see the available commands.")

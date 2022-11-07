@@ -120,6 +120,10 @@ class DatabaseManager:
     def get_mesh_count_by_category(self, shapeClass):
         return self._db.meshes.count_documents({'class': shapeClass})
 
+    # Return the number of meshes with extracted features
+    def get_mesh_count_with_features(self):
+        return self._db.meshes.count_documents({'D4': {'$exists': True}})
+
     # Purge the database
     def purge(self):
         print("Purging database...")

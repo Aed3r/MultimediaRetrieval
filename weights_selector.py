@@ -37,8 +37,9 @@ feature_weights = {
     "D4": 0.0
 }
 
-for comp_mesh in tqdm(meshes, ncols=150, total=378):
-    dists = [[[] for i in range(14)] for i in range(378)]
+tot = dbmngr.get_mesh_count_with_features()
+for comp_mesh in tqdm(meshes, ncols=150, total=tot):
+    dists = [[[] for i in range(14)] for i in range(tot)]
 
     singleValFeatures = [comp_mesh['surface_area'], comp_mesh['compactness'], comp_mesh['volume'],
                          comp_mesh['diameter'], comp_mesh['eccentricity'], comp_mesh['rectangularity']]
@@ -111,6 +112,21 @@ print("- D1: ", str(feature_weights["D1"]))
 print("- D2: ", str(feature_weights["D2"]))
 print("- D3: ", str(feature_weights["D3"]))
 print("- D4: ", str(feature_weights["D4"]))
+
+# Export data to txt file
+with open("data/feature_weights.txt", "w") as f:
+    f.write("feature_weights: \n")
+    f.write("- surface_area: " + str(feature_weights["surface_area"]) + "\n")
+    f.write("- compactness: " + str(feature_weights["compactness"]) + "\n")
+    f.write("- volume: " + str(feature_weights["volume"]) + "\n")
+    f.write("- diameter: " + str(feature_weights["diameter"]) + "\n")
+    f.write("- eccentricity: " + str(feature_weights["eccentricity"]) + "\n")
+    f.write("- rectangularity: " + str(feature_weights["rectangularity"]) + "\n")
+    f.write("- A3: " + str(feature_weights["A3"]) + "\n")
+    f.write("- D1: " + str(feature_weights["D1"]) + "\n")
+    f.write("- D2: " + str(feature_weights["D2"]) + "\n")
+    f.write("- D3: " + str(feature_weights["D3"]) + "\n")
+    f.write("- D4: " + str(feature_weights["D4"]) + "\n")
 
     
 # - eccentricity:  -2241.0246355515646

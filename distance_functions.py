@@ -1,6 +1,5 @@
 import time
 import numpy as np
-from scipy.stats import wasserstein_distance
 import database
 import ShapeDescriptors
 import normalization
@@ -15,9 +14,10 @@ database_length = 380
 # SCALARWEIGHT = 0.25
 # VECTORWEIGHT = 0.75
 SCALARWEIGHT = 0.25/6
-VECTORWEIGHT = 0.75/5
+VECTORWEIGHT = 0.75/6
 # SCALARWEIGHT = 0.25/6
 # VECTORWEIGHT = [0.05, 0.05, 0.25, 0.25, 0.15]
+#SCALARWEIGHTS = [0.07, 0.28, 0.01, 0.03, 0.59, 0.01]
 
 
 def matching_single_Feature(mesh, distance_type):
@@ -73,7 +73,7 @@ def matching_single_Feature(mesh, distance_type):
         dists = [[[] for i in range(2)] for i in range(database_length)]
         i = 0
         for vector in feature_vector_Standardized:
-            dists[i][1] = get_Euclidean_Distance(loadedMesh_Standardized, vector[1])
+            dists[i][1] = util.get_Euclidean_Distance(loadedMesh_Standardized, vector[1])
             dists[i][0] = vector[0]
             i += 1
     elif distance_type == 'Cosine':
@@ -81,7 +81,7 @@ def matching_single_Feature(mesh, distance_type):
         dists = [[[] for i in range(2)] for i in range(database_length)]
         i = 0
         for vector in feature_vector_Standardized:
-            dists[i][1] = get_Cosine_Distance(loadedMesh_Standardized, vector[1])
+            dists[i][1] = util.get_Cosine_Distance(loadedMesh_Standardized, vector[1])
             dists[i][0] = vector[0]
             i += 1
     elif distance_type == 'EMD':
@@ -89,7 +89,7 @@ def matching_single_Feature(mesh, distance_type):
         dists = [[[] for i in range(2)] for i in range(database_length)]
         i = 0
         for vector in feature_vector_Standardized:
-            dists[i][1] = get_Earth_Mover_Distance(loadedMesh_Standardized, vector[1])
+            dists[i][1] = util.get_Earth_Mover_Distance(loadedMesh_Standardized, vector[1])
             dists[i][0] = vector[0]
             i += 1
         
@@ -138,13 +138,13 @@ def matching_histo_Feature(mesh, distance_type, descriptor):
         i = 0
         dists = [[[] for i in range(2)] for i in range(database_length)]
         for vector in histo_Feature_Vector:
-            dists[i][1] = get_Earth_Mover_Distance(Load, vector[1])
+            dists[i][1] = util.get_Earth_Mover_Distance(Load, vector[1])
             dists[i][0] = vector[0]
             i += 1
 
     return dists
 
-def sort(name, dists, distance_type, k = 5):
+def sort(name, dists, k = 5):
     dists.sort(key=lambda x: float(x[1]), reverse=False)
     print("Sorted distance", dists)
     distance = []
@@ -155,34 +155,6 @@ def sort(name, dists, distance_type, k = 5):
             distance.append(d)
     distance = distance[:k]
     return distance
-
-
-# calculate the Euclidean Distance between feature vectors
-# formula: d(A, B) = square root of sum((ai-bi)^2), i = 1, 2, ..., n
-def get_Euclidean_Distance(vector_1, vector_2):
-    # transform input feature vectors into numpy.ndarray if they are not numpy.ndarray type
-    if (type(vector_1) != 'numpy.ndarray' and type(vector_2) != 'numpy.ndarray'):
-        vector_1 = np.asarray(vector_1)
-        vector_2 = np.asarray(vector_2)  
-    Euclidean_distance = np.sqrt(np.square(vector_1 - vector_2).sum())
-    return Euclidean_distance
-
-
-def get_Cosine_Distance(vector_1, vector_2):
-    # transform input feature vectors into numpy.ndarray if they are not numpy.ndarray type
-    if (type(vector_1) != 'numpy.ndarray' and type(vector_2) != 'numpy.ndarray'):
-        vector_1 = np.asarray(vector_1)
-        vector_2 = np.asarray(vector_2) 
-
-    Cosine_distance = (float(np.dot(vector_1, vector_2)) / (np.linalg.norm(vector_1) * np.linalg.norm(vector_2)))
-
-    Cosine_distance = abs(1 - Cosine_distance)
-    return Cosine_distance
-
-
-def get_Earth_Mover_Distance(vector_1, vector_2):
-    EMD = wasserstein_distance(vector_1, vector_2)
-    return EMD
 
 # Uses the loaded meshe's features to find the k closest matches in the database (in theory..)
 # Assumes the mesh already has features extracted, not necessarily standardized though
@@ -220,7 +192,7 @@ def find_best_matches(mesh, k = 5):
     dists = [[[] for i in range(2)] for i in range(database_length)]
 
     i = 0
-    for db_mesh in tqdm(meshes, desc='Comparing meshes', ncols=150, total=dbmngr.get_mesh_count()):
+    for db_mesh in tqdm(meshes, desc='Comparing meshes', ncols=150, total=dbmngr.get_mesh_count_with_features()):
         # Check if the mesh is the querying mesh, remove it if it is
         if db_mesh["name"] == mesh["name"]:
             continue
@@ -235,9 +207,12 @@ def find_best_matches(mesh, k = 5):
 
         #dbSingleValFeatures = util.standardize(dbSingleValFeatures, mu, sigma)
         dists[i][0] = db_mesh["path"]
-        dists[i][1] = get_Cosine_Distance(singleValFeatures, dbSingleValFeatures) * SCALARWEIGHT
+        dists[i][1] = util.get_Cosine_Distance(singleValFeatures, dbSingleValFeatures) * SCALARWEIGHT
         for j in range(len(multiValFeatures)):
-            dists[i][1] += get_Earth_Mover_Distance(multiValFeatures[j], dbMultiValFeatures[j]) * VECTORWEIGHT
+            dists[i][1] += util.get_Earth_Mover_Distance(multiValFeatures[j], dbMultiValFeatures[j]) * VECTORWEIGHT
+        # Average the distances
+        dists[i][1] /= (len(multiValFeatures) + 1)
+
         # try Distance weighting
         # dists[i][1] = get_Euclidean_Distance(singleValFeatures, dbSingleValFeatures)
         # for j in range(len(multiValFeatures)):

@@ -3,6 +3,8 @@ from util import *
 from tqdm import tqdm
 import pymeshfix
 import trimesh
+import pyvista
+import pyacvd
 
 MINRESAMPLINGTHRESHOLD = 500
 MAXRESAMPLINGTHRESHOLD = 50000

@@ -1,5 +1,0 @@
-Normalize feature vector:
- - compute avg of column
- - subtract each value from avg
- - divide by standard deviation of column
- - Most values should be in the same range (-1, +1)

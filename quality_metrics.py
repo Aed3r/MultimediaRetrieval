@@ -9,7 +9,7 @@ database_length = 380
 def getTruthTable():
     meshes = dbmngr.get_all_with_extracted_features()
     # mesh = dbmngr.get_by_path("data\\normalized\\Airplane\\61.off")
-    for mesh in tqdm(meshes, desc='Computing TruthTable', ncols=130, total=dbmngr.get_mesh_count()):
+    for mesh in tqdm(meshes, desc='Computing TruthTable', ncols=130, total=dbmngr.get_mesh_count_with_features()):
         Qlabel = mesh['class']
         res = df.find_best_matches(mesh, k=5)
         TP = FP = 0

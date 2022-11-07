@@ -1,8 +1,10 @@
 # Multimedia Retrieval Assignment
 
 ## Installation & Setup
- - Install Python 3.9.13: https://www.python.org/ftp/python/3.9.13/python-3.9.13-amd64.exe - Make sure to select 'Add Python to Path' in the installer!
+ - Install Python 3.9.13 (not higher): https://www.python.org/ftp/python/3.9.13/python-3.9.13-amd64.exe - Make sure to select 'Add Python to Path' in the installer!
  - Install mongodb: https://www.mongodb.com/docs/manual/installation/
+ - Microsoft Visual C++ 14.0 or greater is required. Get https://visualstudio.microsoft.com/visual-cpp-build-tools/ and select the "Desktop development with C++" workload. Then for Individual Components, select only: "Windows 10 SDK" and "C++ x64/x86 build tools".
+    - Or run `vs_buildtools.exe --norestart --passive --downloadThenInstall --includeRecommended --add Microsoft.VisualStudio.Workload.NativeDesktop --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Workload.MSBuildTools`
  - Install all python modules: open a new terminal at the project root and run `pip3 install -r requirements.txt`
     - You might also need to install 'windows-curses' if your operating system is Windows: `pip3 install windows-curses`
  - Run `python3.9 open3d_test.py` to check that open3d works

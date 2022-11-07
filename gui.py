@@ -14,14 +14,15 @@ from PIL import ImageTk, Image
 import distance_functions as df
 import normalization
 import ShapeDescriptors
+from tkinter.ttk import Progressbar
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("My App")
         self.geometry("1000x700")
-        self.button = Button(self, text="Load a mesh", command=self.on_button_click)
-        self.button.pack()
+        self.loadBtn = Button(self, text="Load a mesh", command=self.on_button_click)
+        self.loadBtn.pack()
 
     def on_button_click(self):
         # Open a file dialog
@@ -31,6 +32,13 @@ class App(tk.Tk):
         )
         if not filename:
             return
+
+        # Remove the layout if they exist
+        if hasattr(self, "horiz_layout_loaded"):
+            self.horiz_layout_loaded.pack_forget()
+        
+        if hasattr(self, "horiz_layout_res"):
+            self.horiz_layout_res.pack_forget()
 
         print("Loading mesh...")
         start = time.time()
@@ -108,12 +116,12 @@ class App(tk.Tk):
         rectangularityLabel = ttk.Label(vert_layout_desc_loaded, text="Rectangularity: " + str(self.mesh["rectangularity"]))
         rectangularityLabel.pack()
 
-        # Load a "analyze" button
-        self.button = Button(self, text="Analyze", command=self.on_analyze_click)
-        self.button.pack()
-
     def on_analyze_click(self):
         res = df.find_best_matches(self.mesh, 5)
+
+        # Hide the buttons
+        self.analyzeBtn.pack_forget()
+        self.loadBtn.pack_forget()
 
         # Create a horizontal layout
         self.horiz_layout_res = ttk.Frame(self)
