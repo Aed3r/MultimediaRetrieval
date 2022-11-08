@@ -1,6 +1,4 @@
-from lib2to3.pgen2.token import NUMBER
 import os
-from traceback import print_stack
 import database as db
 import load_meshes as lm
 import normalization as nrmlz
@@ -10,6 +8,7 @@ import visualizer as vis
 import time
 import util
 import ann_search as ann
+import quality_metrics
 
 dbmngr = db.DatabaseManager()
 normalized_meshes = []
@@ -155,6 +154,27 @@ def create_ann():
 
     print(f"ANN index created successfully. ({round(time.time() - start)}s)")
 
+def gen_truth_table(type):
+    print("Generating truth table...")
+    start = time.time()
+
+    if type == "simple":
+        quality_metrics.getTruthTable("simple")
+    elif type == "ann":
+        quality_metrics.getTruthTable("ann")
+
+    print(f"Truth table generated successfully. ({round(time.time() - start)}s)")
+
+def run_quality_metrics():
+    global dbmngr
+
+    print("Running quality metrics...")
+    start = time.time()
+
+    quality_metrics.run_quality_metrics()
+
+    print(f"Quality metrics run successfully. ({round(time.time() - start)}s)")
+
 def main():
     global dbmngr
 
@@ -205,6 +225,12 @@ def main():
             import_db()
         elif sys.argv[1].lower() == "createann":
             create_ann()
+        elif sys.argv[1].lower() == "gentruthtablesimple":
+            gen_truth_table("simple")
+        elif sys.argv[1].lower() == "gentruthtableann":
+            gen_truth_table("ann")
+        elif sys.argv[1].lower() == "qualmetrics":
+            run_quality_metrics()
         elif sys.argv[1].lower() == "help":
             print("Available commands:")
             print("gen/genLPSB: Normalizes and generates the database using all the meshes in the Labeled PSB dataset. Extracts features and generates thumbnails")
@@ -223,6 +249,9 @@ def main():
             print("exportDB: Exports the database to a JSON file. If no path is specified, the default path is 'data/cache/db.json'")
             print("importDB: Imports the database from a JSON file. If no path is specified, the default path is 'data/cache/db.json'")
             print("createANN: Creates the ANN index")
+            print("genTruthTableSimple: Generates the truth tables for the simple CBSR")
+            print("genTruthTableANN: Generates the truth tables for the ANN CBSR")
+            print("qualMetrics: Runs the quality metrics for the currently generated truth tables")
             print("help: Prints this help message")
         else:
             print("Invalid argument. Use 'python main.py help' to see the available commands.")

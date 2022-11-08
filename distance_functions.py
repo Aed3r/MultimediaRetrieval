@@ -13,8 +13,8 @@ dbmngr = database.DatabaseManager()
 database_length = 380
 # SCALARWEIGHT = 0.25
 # VECTORWEIGHT = 0.75
-SCALARWEIGHT = 0.25/6
-VECTORWEIGHT = 0.75/6
+SCALARWEIGHT = 0.2/6
+VECTORWEIGHT = 0.8/5
 # SCALARWEIGHT = 0.25/6
 # VECTORWEIGHT = [0.05, 0.05, 0.25, 0.25, 0.15]
 #SCALARWEIGHTS = [0.07, 0.28, 0.01, 0.03, 0.59, 0.01]
@@ -159,10 +159,11 @@ def sort(name, dists, k = 5):
 # Uses the loaded meshe's features to find the k closest matches in the database (in theory..)
 # Assumes the mesh already has features extracted, not necessarily standardized though
 # Use k to specify how many results to return
-def find_best_matches(mesh, k = 5):
+def find_best_matches(mesh, k = 5, mu = None, sigma = None, verbose=False, weights=None):
     global dbmngr
 
-    print("Finding best matches for mesh: ", mesh["name"])
+    if verbose:
+        print("Finding best matches for mesh: ", mesh["name"])
 
     singleValFeatures = [mesh['surface_area'], mesh['compactness'], mesh['volume'],
                          mesh['diameter'], mesh['eccentricity'], mesh['rectangularity']]
@@ -172,27 +173,40 @@ def find_best_matches(mesh, k = 5):
     meshes = dbmngr.get_all_with_extracted_features()
 
     # get mean and standard deviation of each feature from database
-    print("Calculating mean and standard deviation of database features...")
-    start = time.time()
-    mu, sigma = util.get_single_features_mean_and_sigma_from_meshes(meshes)
-    end = time.time()
-    print("Calculating mean and standard deviation of database features done in ", end - start, " seconds")
+    if verbose:
+        print("Calculating mean and standard deviation of database features...")
+        start = time.time()
+    if mu is None or sigma is None:
+        mu, sigma = util.get_single_features_mean_and_sigma_from_meshes(meshes)
+    if verbose:
+        end = time.time()
+        print("Calculating mean and standard deviation of database features done in ", end - start, " seconds")
 
     # get features from database (cursor refresh)
     meshes = dbmngr.get_all_with_extracted_features()
 
     # standardize the loaded mesh's features
-    print("Standardizing the loaded meshe's single value features...")
-    start = time.time()
+    if verbose:
+        print("Standardizing the loaded meshe's single value features...")
+        start = time.time()
     singleValFeatures = util.standardize(singleValFeatures, mu, sigma)
-    end = time.time()
-    print("Standardizing the loaded meshe's single value features done in ", end - start, " seconds")
+    if verbose:
+        end = time.time()
+        print("Standardizing the loaded meshe's single value features done in ", end - start, " seconds")
 
     # compare single value features using Cosine Distance
-    dists = [[[] for i in range(2)] for i in range(database_length)]
+    dbLength = dbmngr.get_mesh_count_with_features()
+    dists = []
+
+    if weights is None:
+        singleValWeights = np.asarray([SCALARWEIGHT for i in range(len(singleValFeatures))])
+        multiValWeights = np.asarray([VECTORWEIGHT for i in range(len(multiValFeatures[0]))])
+    else:
+        singleValWeights = np.asarray(weights[:len(singleValFeatures)])
+        multiValWeights = np.asarray(weights[len(singleValFeatures):])
 
     i = 0
-    for db_mesh in tqdm(meshes, desc='Comparing meshes', ncols=150, total=dbmngr.get_mesh_count_with_features()):
+    for db_mesh in tqdm(meshes, desc='Comparing meshes', ncols=150, total=dbLength):
         # Check if the mesh is the querying mesh, remove it if it is
         if db_mesh["name"] == mesh["name"]:
             continue
@@ -206,12 +220,21 @@ def find_best_matches(mesh, k = 5):
         dbMultiValFeatures = [db_mesh['A3'], db_mesh['D1'], db_mesh['D2'], db_mesh['D3'], db_mesh['D4']]
 
         #dbSingleValFeatures = util.standardize(dbSingleValFeatures, mu, sigma)
-        dists[i][0] = db_mesh["path"]
-        dists[i][1] = util.get_Cosine_Distance(singleValFeatures, dbSingleValFeatures) * SCALARWEIGHT
+        dists.append([])
+        dists[i].append(db_mesh["path"])
+        dists[i].append(0)
+        for j in range(len(singleValFeatures)):
+            dists[i][1] += util.get_Euclidean_Distance(singleValFeatures[j], dbSingleValFeatures[j]) * singleValWeights[j]
         for j in range(len(multiValFeatures)):
-            dists[i][1] += util.get_Earth_Mover_Distance(multiValFeatures[j], dbMultiValFeatures[j]) * VECTORWEIGHT
+            dists[i][1] += util.get_Earth_Mover_Distance(multiValFeatures[j], dbMultiValFeatures[j]) * multiValWeights[j]
+
         # Average the distances
         dists[i][1] /= (len(multiValFeatures) + 1)
+            
+        for j in range(len(singleValFeatures)):
+            dists[i].append(util.get_Euclidean_Distance(singleValFeatures[j], dbSingleValFeatures[j]) * singleValWeights[j])
+        for j in range(len(multiValFeatures)):
+            dists[i].append(util.get_Earth_Mover_Distance(multiValFeatures[j], dbMultiValFeatures[j]) * multiValWeights[j])
 
         # try Distance weighting
         # dists[i][1] = get_Euclidean_Distance(singleValFeatures, dbSingleValFeatures)
@@ -234,11 +257,13 @@ def find_best_matches(mesh, k = 5):
     dists = dists[:k]
 
     res = []
-    print("Results:")
+    if verbose:
+        print("Best matches:")
     for i in range(k):
         res.append(dbmngr.get_by_path(dists[i][0]))
-        res[i]["distance"] = dists[i][1]
-        print(" #" + str(i + 1) + " " + res[i]["name"] + " distance:" + str(dists[i][1]))
+        res[i]["distance"] = dists[i][1:]
+        if verbose:
+            print(" #" + str(i + 1) + " " + res[i]["name"] + " distance:" + str(dists[i][1]))
 
     return res
 
@@ -275,7 +300,7 @@ if __name__ == "__main__":
 
     mesh = normalization.normalize(mesh)
     mesh = ShapeDescriptors.extract_all_features(mesh, True)
-    best = find_best_matches(mesh, k=5)
+    best = find_best_matches(mesh, k=5, verbose=True)
 
     for x in best:
         print(x["name"] + "-" + x["path"] + "-" + x["class"])

@@ -2,16 +2,32 @@ import numpy as np
 from tqdm import tqdm
 import database as db
 import distance_functions as df
+import ann_search as ann
 
 dbmngr = db.DatabaseManager()
 database_length = 380
 
-def getTruthTable():
+def getTruthTable(type="simple"):
     meshes = dbmngr.get_all_with_extracted_features()
+
+    if not meshes.alive:
+        raise Exception("No meshes with extracted features found in the db. Run 'python main.py extract' first.")
+
     # mesh = dbmngr.get_by_path("data\\normalized\\Airplane\\61.off")
     for mesh in tqdm(meshes, desc='Computing TruthTable', ncols=130, total=dbmngr.get_mesh_count_with_features()):
         Qlabel = mesh['class']
-        res = df.find_best_matches(mesh, k=5)
+
+        if type == "simple":
+            res = df.find_best_matches(mesh, k=5)
+        elif type == "ann":
+            nn = ann.get_knn(mesh, k=5)
+
+            res = []
+            for i, x in enumerate(nn[0]):
+                mesh = dbmngr.get_all_with_extracted_features()[x]
+                mesh["distance"] = nn[1][i]
+                res.append(mesh)
+        
         TP = FP = 0
         # dbQsum: total number of positive shapes in db
         dbQsum = dbmngr.get_mesh_count_by_category(Qlabel)
@@ -84,7 +100,11 @@ def ppv(DBlabel):
     meshes = dbmngr.get_all_with_extracted_features()
     for mesh in meshes:
         # TruthTable = [TP, FP, FN, TN]
-        ppvm = mesh['TruthTable'][0] / (mesh['TruthTable'][0] + mesh['TruthTable'][1])
+
+        if mesh['TruthTable'][0] + mesh['TruthTable'][1] == 0:
+            ppvm = 0
+        else:
+            ppvm = mesh['TruthTable'][0] / (mesh['TruthTable'][0] + mesh['TruthTable'][1])
 
         for i in range(len(PPV)):
              if mesh['class'] == PPV[i][0]:
@@ -181,10 +201,13 @@ def specificity(DBlabel):
     print("average Specificity of the database:", SPECdbavg)
     return 0
 
-
-if __name__ == "__main__":
-    #getTruthTable()    #compute truthTable and store in db
+def run_quality_metrics():
     meshes = dbmngr.get_all_with_extracted_features()
+
+    if not meshes.alive:
+        print("No meshes with extracted features found in the db. Run 'python main.py extract' first.")
+        return
+
     dblabel = []
     for mesh in meshes:
         if "TruthTable" not in mesh:
@@ -198,7 +221,7 @@ if __name__ == "__main__":
         DBlabel.append(''.join(label))
 
     # Correct percentage of total data:
-    # acc(DBlabel)
+    #acc(DBlabel)
 
     # this one might be good to show
     # proportion of returned dogs from all RETURNED items
@@ -210,9 +233,15 @@ if __name__ == "__main__":
     # high recall: I get most of dogs in database
     # low recall: There are many dogs in database I don’t find
     # also called sensitivity : proportion of all dogs that are returned by a query for dogs
-    # recall(DBlabel)
+    #recall(DBlabel)
 
     # this one has error
     # proportion of all cats that are not returned by a query for dogs
-    # specificity(DBlabel)
+    #specificity(DBlabel)
+
+
+if __name__ == "__main__":
+    #getTruthTable()    #compute truthTable and store in db
+    
+    run_quality_metrics()
 

@@ -209,7 +209,7 @@ def get_Earth_Mover_Distance(vector_1, vector_2):
     EMD = wasserstein_distance(vector_1, vector_2)
     return EMD
 
-def get_feature_vector_from_mesh(mesh):
+def get_feature_vector_from_mesh(mesh, weights=None):
     try:
         if "surface_area_std" in mesh:
             v = [mesh["surface_area_std"], mesh["compactness_std"], mesh["volume_std"], mesh["diameter_std"], mesh["eccentricity_std"], mesh["rectangularity_std"]]
@@ -217,9 +217,12 @@ def get_feature_vector_from_mesh(mesh):
             v = [mesh["surface_area"], mesh["compactness"], mesh["volume"], mesh["diameter"], mesh["eccentricity"], mesh["rectangularity"]]
         multiValue = [mesh['A3'], mesh['D1'], mesh['D2'], mesh['D3'], mesh['D4']]
 
-        for x in multiValue:
-            for y in x:
-                v.append(y)
+        for i, x in enumerate(multiValue):
+            for j, y in enumerate(x):
+                if weights is not None:
+                    v.append(y * weights[i + j])
+                else:
+                    v.append(y)
 
         return v
     except:
