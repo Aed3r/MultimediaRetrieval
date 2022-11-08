@@ -12,6 +12,39 @@ from tqdm.contrib.concurrent import process_map
 
 FEATUREPLOTSPATH = "data/featurePlots/"
 
+# Calculate the distance between barycenter and origin
+def get_barycenter_origin_distance(mesh):
+    barycenter = get_shape_barycenter(mesh)
+    origin = np.asarray([0, 0, 0])
+    barycenter_origin_distance = distance_between(barycenter, origin)
+
+    return barycenter_origin_distance
+
+
+# Calculate the absolute cosine similarity between 2 vectors
+def get_Cosine_similarity(mesh):
+
+    eigenvalues, eigenvectors = compute_PCA(mesh)
+    largest_eigenvector = eigenvectors[:, np.argmax(eigenvalues)]
+    vec1 = largest_eigenvector
+    # v2: x-axis
+    vec2 = [1, 0, 0]
+    vec1 = np.asarray(vec1)
+    vec2 = np.asarray(vec2)
+    # cosine_similarity = vec1.dot(vec2) / np.linalg.norm(vec1) * np.linalg.norm(vec2)
+    cosine_similarity = (float(np.dot(vec1, vec2)) / (np.linalg.norm(vec1) * np.linalg.norm(vec2)))
+    absolute_cosine_similarity = abs(cosine_similarity)
+
+    return absolute_cosine_similarity
+
+
+# Calculate the length of the longest AABB edge
+def get_longest_AABB_edge(mesh):
+    aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(mesh['vertices']))
+    longest_AABB_edge = aabb.get_max_extent()
+    
+    return longest_AABB_edge
+
 # Calculate the surface area of a mesh in the data list
 def get_Surface_Area(data):
     mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(data['vertices']), o3d.cpu.pybind.utility.Vector3iVector(data['faces']))
