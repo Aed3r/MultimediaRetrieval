@@ -1,8 +1,10 @@
 import numpy as np
+from scipy.optimize import curve_fit
 from tqdm import tqdm
 import database as db
 import distance_functions as df
 import ann_search as ann
+import matplotlib.pyplot as plt
 
 dbmngr = db.DatabaseManager()
 database_length = 380
@@ -16,17 +18,15 @@ def getTruthTable(type="simple"):
     # mesh = dbmngr.get_by_path("data\\normalized\\Airplane\\61.off")
     for mesh in tqdm(meshes, desc='Computing TruthTable', ncols=130, total=dbmngr.get_mesh_count_with_features()):
         Qlabel = mesh['class']
-
         if type == "simple":
             res = df.find_best_matches(mesh, k=5)
         elif type == "ann":
-            nn = ann.get_knn(mesh, k=5)
-
+            nn = ann.get_knn(mesh, k=20)
             res = []
             for i, x in enumerate(nn[0]):
-                mesh = dbmngr.get_all_with_extracted_features()[x]
-                mesh["distance"] = nn[1][i]
-                res.append(mesh)
+                mesh1 = dbmngr.get_all_with_extracted_features()[x]
+                mesh1 ["distance"] = nn[1][i]
+                res.append(mesh1)
         
         TP = FP = 0
         # dbQsum: total number of positive shapes in db
@@ -102,7 +102,7 @@ def ppv(DBlabel):
         # TruthTable = [TP, FP, FN, TN]
 
         if mesh['TruthTable'][0] + mesh['TruthTable'][1] == 0:
-            ppvm = 0
+            ppvm = 1
         else:
             ppvm = mesh['TruthTable'][0] / (mesh['TruthTable'][0] + mesh['TruthTable'][1])
 
@@ -174,14 +174,15 @@ def specificity(DBlabel):
     meshes = dbmngr.get_all_with_extracted_features()
     for mesh in meshes:
         # TruthTable = [TP, FP, FN, TN]
-        try:
+        if (mesh['TruthTable'][1] + mesh['TruthTable'][3]==0):
+            specm = 1
+        else:
             specm = mesh['TruthTable'][3] / (mesh['TruthTable'][1] + mesh['TruthTable'][3])
 
-            for i in range(len(SPEC)):
-                 if mesh['class'] == SPEC[i][0]:
-                    SPEC[i][1] += specm
-        except:
-            continue
+        for i in range(len(SPEC)):
+            if mesh['class'] == SPEC[i][0]:
+                SPEC[i][1] += specm
+
     # get SPEC average by class
     SPECavg = [[0 for i in range(2)] for i in range(len(SPEC))]
     for i in range(len(SPEC)):
@@ -201,12 +202,64 @@ def specificity(DBlabel):
     print("average Specificity of the database:", SPECdbavg)
     return 0
 
+
+def roc(meshes):
+    ROC = [[0 for i in range(2)] for i in range(database_length)]
+
+    # get recall(sensitivity) and specificity
+    i = 0
+    for mesh in meshes:
+        # TruthTable = [TP, FP, FN, TN]
+        # Sensitivity: TP / (TP + FN) = TP / c
+        if (mesh['TruthTable'][0] + mesh['TruthTable'][2]) == 0:
+            ROC[i][0] = 1
+        else:
+            ROC[i][0] = mesh['TruthTable'][0] / (mesh['TruthTable'][0] + mesh['TruthTable'][2])
+        #Specificity: TN / (FP + TN) = TN / (d-c)
+        if (mesh['TruthTable'][1] + mesh['TruthTable'][3]) == 0:
+            ROC[i][1] = 1
+        else:
+            ROC[i][1] = mesh['TruthTable'][3] / (mesh['TruthTable'][1] + mesh['TruthTable'][3])
+        i += 1
+
+    x = []
+    y = []
+
+    for n in range(len(ROC)):
+        x.append(ROC[n][0])
+        y.append(1-ROC[n][1])
+    plt.scatter(x, y)
+
+    # figure = np.polyfit(x, y, 1)
+    # c = figure[0]
+    # d = figure[1]
+    # y2 = []
+    # for b in x:
+    #     y2.append(b * c + d)
+    # plt.plot(x, y2)
+
+    # z = np.polyfit(x, y, 3)
+    # f = np.poly1d(z)
+    # x_new = np.linspace(x[0], x[-1])
+    # y_new = f(x_new)
+    #plt.plot(x, y, 'o', x_new, y_new)
+
+    plt.xlabel("Sensitivity")
+    plt.ylabel("Specificity")
+    plt.title("ROC Curve")
+    plt.show()
+
+    return 0
+
+
 def run_quality_metrics():
     meshes = dbmngr.get_all_with_extracted_features()
 
     if not meshes.alive:
         print("No meshes with extracted features found in the db. Run 'python main.py extract' first.")
         return
+
+    roc(meshes)
 
     dblabel = []
     for mesh in meshes:
@@ -221,27 +274,27 @@ def run_quality_metrics():
         DBlabel.append(''.join(label))
 
     # Correct percentage of total data:
-    #acc(DBlabel)
+    # acc(DBlabel)
 
     # this one might be good to show
     # proportion of returned dogs from all RETURNED items
     # high precision(ppv): I get mostly dogs in my query result
     # low precision(ppv): I get many cats in my query result
-    ppv(DBlabel)
+    # ppv(DBlabel)
 
     # proportion of returned dogs from all DOGS in database
     # high recall: I get most of dogs in database
     # low recall: There are many dogs in database I don’t find
     # also called sensitivity : proportion of all dogs that are returned by a query for dogs
-    #recall(DBlabel)
+    # recall(DBlabel)
 
     # this one has error
     # proportion of all cats that are not returned by a query for dogs
-    #specificity(DBlabel)
+    # specificity(DBlabel)
 
 
 if __name__ == "__main__":
-    #getTruthTable()    #compute truthTable and store in db
+    # getTruthTable(type="ann")    #compute truthTable and store in db
     
     run_quality_metrics()
 
