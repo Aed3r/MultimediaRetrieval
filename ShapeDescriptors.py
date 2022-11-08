@@ -12,6 +12,39 @@ from tqdm.contrib.concurrent import process_map
 
 FEATUREPLOTSPATH = "data/featurePlots/"
 
+# Calculate the distance between barycenter and origin
+def get_barycenter_origin_distance(mesh):
+    barycenter = get_shape_barycenter(mesh)
+    origin = np.asarray([0, 0, 0])
+    barycenter_origin_distance = distance_between(barycenter, origin)
+
+    return barycenter_origin_distance
+
+
+# Calculate the absolute cosine similarity between 2 vectors
+def get_Cosine_similarity(mesh):
+
+    eigenvalues, eigenvectors = compute_PCA(mesh)
+    largest_eigenvector = eigenvectors[:, np.argmax(eigenvalues)]
+    vec1 = largest_eigenvector
+    # v2: x-axis
+    vec2 = [1, 0, 0]
+    vec1 = np.asarray(vec1)
+    vec2 = np.asarray(vec2)
+    # cosine_similarity = vec1.dot(vec2) / np.linalg.norm(vec1) * np.linalg.norm(vec2)
+    cosine_similarity = (float(np.dot(vec1, vec2)) / (np.linalg.norm(vec1) * np.linalg.norm(vec2)))
+    absolute_cosine_similarity = abs(cosine_similarity)
+
+    return absolute_cosine_similarity
+
+
+# Calculate the length of the longest AABB edge
+def get_longest_AABB_edge(mesh):
+    aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(mesh['vertices']))
+    longest_AABB_edge = aabb.get_max_extent()
+    
+    return longest_AABB_edge
+
 # Calculate the surface area of a mesh in the data list
 def get_Surface_Area(data):
     mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(data['vertices']), o3d.cpu.pybind.utility.Vector3iVector(data['faces']))
@@ -316,37 +349,90 @@ def extract_all_features_from_meshes(meshes):
     return process_map(extract_all_features, meshes, desc="Extracting features", ncols=150)
 
 if __name__ == '__main__':
-    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, fromNORM=False, randomSample=2, returnInfoOnly=False)
+    import statistics
+    data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, fromNORM=False, randomSample=-1, returnInfoOnly=False)
     #data = 'data/LabeledDB_new/Bird/256.off'
     #mesh = load_meshes.load_OFF(data)
-    # get normalized mesh
-    util_data = []
-    for mesh in data:
-        util_data.append(normalization.normalize(mesh))
-    #util_data.append(normalization.normalize(mesh))
 
-    Compactness = []
-    Rectangularity = []
-    SurfaceArea = []
-    Volume = []
-    Diameter = []
-    Eccentricity = []
-    for i in range(len(util_data)):
-        Volume.append(get_Volume(util_data[i]))
-        SurfaceArea.append(get_Surface_Area(util_data[i]))
-        Compactness.append(get_Compactness(util_data[i]))
-        Rectangularity.append(get_3D_Rectangularity(util_data[i]))
-        Diameter.append(get_diameter(util_data[i]))
-        Eccentricity.append(get_eccentricity(util_data[i]))
+    normalized_data = load_meshes.get_meshes(fromLPSB=False, fromPRIN=False, fromNORM=True, randomSample=-1, returnInfoOnly=False)
 
-    for i in range(len(util_data)):
-        print("The %dth data feature: " %(i+1))
-        print("Volume: %.20f" %Volume[i])
-        print("Surface Area: %.5f" %SurfaceArea[i])
-        print("Compactness: %.5f" %Compactness[i])
-        print("Rectangularity: %.5f" %Rectangularity[i])
-        print("Diameter: %.5f" %Diameter[i])
-        print("Eccentricity: %.5f" %Eccentricity[i])
+    barycenter_origin_distance = []
+    absolute_cosine_similarity = []
+    longest_AABB_edge = []
+    
+    for i in range(len(data)):
+        # barycenter_origin_distance.append(util.get_barycenter_origin_distance(data[i]))
+        absolute_cosine_similarity.append(util.get_Cosine_similarity(data[i]))
+        longest_AABB_edge.append(util.get_longest_AABB_edge(data[i]))
+        
+
+    for i in range(len(data)):
+        print("The %dth origin data feature: " %(i+1))
+        print("barycenter_origin_distance: %.5f" %barycenter_origin_distance[i])
+        print("absolute_cosine_similarity: %.5f" %absolute_cosine_similarity[i])
+        print("AABB_edge_0: %.5f" %longest_AABB_edge[i])
+
+
+    
+    # store in sheet and histogram
+    # statistics.draw_histogram(barycenter_origin_distance, 'barycenter distance')
+    # statistics.save_Excel(barycenter_origin_distance, 'baryCenter_origin_distance_I')
+    # statistics.draw_histogram(absolute_cosine_similarity, 'cosine similarity')
+    # statistics.save_Excel(absolute_cosine_similarity, 'absolute_cosine_similarity_I')
+    statistics.draw_histogram(longest_AABB_edge, 'AABB')
+    statistics.save_Excel(longest_AABB_edge, 'longest_AABB_edge_I')
+
+    barycenter_origin_distance_Normalized = []
+    absolute_cosine_similarity_Normalized = []
+    longest_AABB_edge_Normalized = []
+
+
+    for i in range(len(normalized_data)):
+        # barycenter_origin_distance_Normalized.append(util.get_barycenter_origin_distance(normalized_data[i]))
+        # absolute_cosine_similarity_Normalized.append(util.get_Cosine_similarity(normalized_data[i]))
+        longest_AABB_edge_Normalized.append(util.get_longest_AABB_edge(normalized_data[i]))
+        
+
+    # for i in range(len(data)):
+        # print("The %dth origin data feature: " %(i+1))
+        # print("barycenter_origin_distance_normalized: %.5f" %barycenter_origin_distance_Normalized[i])
+        # print("absolute_cosine_similarity_normalized: %.5f" %absolute_cosine_similarity_Normalized[i])
+        # print("longest_AABB_edge_normalized: %.5f" %longest_AABB_edge_Normalized[i])
+    # statistics.draw_histogram(barycenter_origin_distance_Normalized, 'barycenter distance')
+    # statistics.save_Excel(barycenter_origin_distance_Normalized, 'baryCenter_origin_distance_N')
+    # statistics.draw_histogram(absolute_cosine_similarity_Normalized, 'cosine similarity')
+    # statistics.save_Excel(absolute_cosine_similarity_Normalized, 'absolute_cosine_similarity_N')
+    statistics.draw_histogram(longest_AABB_edge_Normalized, 'AABB')
+    statistics.save_Excel(longest_AABB_edge_Normalized, 'longest_AABB_edge_N')
+
+
+    # # get normalized mesh
+    # util_data = []
+    # for mesh in data:
+    #     util_data.append(normalization.normalize(mesh))
+    # #util_data.append(normalization.normalize(mesh))
+
+    # Compactness = []
+    # Rectangularity = []
+    # SurfaceArea = []
+    # Volume = []
+    # Diameter = []
+    # Eccentricity = []
+    # for i in range(len(util_data)):
+    #     Volume.append(get_Volume(util_data[i]))
+    #     SurfaceArea.append(get_Surface_Area(util_data[i]))
+    #     Compactness.append(get_Compactness(util_data[i]))
+    #     Rectangularity.append(get_3D_Rectangularity(util_data[i]))
+    #     Diameter.append(get_diameter(util_data[i]))
+    #     Eccentricity.append(get_eccentricity(util_data[i]))
+
+    # for i in range(len(util_data)):
+    #     print("The %dth data feature: " %(i+1))
+    #     print("Volume: %.20f" %Volume[i])
+    #     print("Surface Area: %.5f" %SurfaceArea[i])
+    #     print("Compactness: %.5f" %Compactness[i])
+    #     print("Rectangularity: %.5f" %Rectangularity[i])
+    #     print("Diameter: %.5f" %Diameter[i])
+    #     print("Eccentricity: %.5f" %Eccentricity[i])
 
     #genFeaturePlots()
-

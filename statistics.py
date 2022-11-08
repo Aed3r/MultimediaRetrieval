@@ -36,6 +36,15 @@ def draw_histogram(numberCounts, type):
         plt.xlabel('OBB volume')
     elif type == ('volume'):
         plt.xlabel('volume of mesh')
+    # full normalization histogram
+    elif type == ('barycenter distance'):
+        plt.xlabel('Distance of barycenter to origin')
+        plt.axis([0, 1, 0, 400])
+    elif type == ('AABB'):
+        plt.xlabel('Length of the longest AABB edge')
+        plt.axis([0, 2, 0, 400])
+    elif type == ('cosine similarity'):
+        plt.xlabel('Absolute Cosine similarity between major eigenvector and x-axis')
     plt.ylabel('frequency')
     plt.title('Histogram')
     plt.show()
