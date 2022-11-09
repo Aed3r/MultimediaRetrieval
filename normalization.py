@@ -15,30 +15,25 @@ def translate_mesh_to_origin(mesh):
 
 # Returns the shape scaled to the unit cube
 def scale_mesh_to_unit(mesh):
-    return scale_mesh(mesh, 1 / np.max(np.linalg.norm(np.asarray(mesh["vertices"]), axis=1)))
+    (xMax, yMax, zMax) = list(np.max(mesh["vertices"], axis=0))
+    (xMin, yMin, zMin) = list(np.min(mesh["vertices"], axis=0))
+
+    maxDist = max(abs(xMax - xMin), abs(yMax - yMin), abs(zMax - zMin))
+
+    return scale_mesh(mesh, 1 / maxDist)
 
 # Align the two largest eigenvectors with the x and y axis
 def align_shape(mesh):
     # Do PCA
     eigenvalues, eigenvectors = compute_PCA(mesh)
-
-    # Get the two largest eigenvectors
-    largest_eigenvector = eigenvectors[:, np.argmax(eigenvalues)]
-    second_largest_eigenvector = eigenvectors[:, np.argsort(eigenvalues)[-2]]
-
-    # Get the two largest eigenvectors' angles with the x and y axis
-    largest_eigenvector_angle = np.arctan2(largest_eigenvector[1], largest_eigenvector[0])
-    second_largest_eigenvector_angle = np.arctan2(second_largest_eigenvector[1], second_largest_eigenvector[0])
-
-    # Get the rotation matrix for the two largest eigenvectors
-    rotation_matrix = np.array([[np.cos(largest_eigenvector_angle), -np.sin(largest_eigenvector_angle), 0],
-                                [np.sin(largest_eigenvector_angle), np.cos(largest_eigenvector_angle), 0],
-                                [0, 0, 1]])
-
+    rot_matrix = np.array(eigenvectors)
+    
     # Rotate the shape
-    mesh["vertices"] = o3d.utility.Vector3dVector(np.dot(rotation_matrix, np.asarray(mesh["vertices"]).T).T)
+    mesh["vertices"] = o3d.utility.Vector3dVector(np.dot(rot_matrix, np.asarray(mesh["vertices"]).T).T)
+
     newAABB = o3d.geometry.AxisAlignedBoundingBox.create_from_points(mesh["vertices"])
     mesh["aabb"] = [newAABB.get_min_bound()[0], newAABB.get_min_bound()[1], newAABB.get_min_bound()[2], newAABB.get_max_bound()[0], newAABB.get_max_bound()[1], newAABB.get_max_bound()[2]]
+    
     return mesh
 
 # Performs the flipping test and mirrors the shape if necessary
@@ -130,17 +125,17 @@ def hole_filling(mesh):
 
 # Applies all the normalization steps to the given mesh
 def normalize(mesh):
-    if mesh['numVerts'] < MINRESAMPLINGTHRESHOLD or mesh['numVerts'] > MAXRESAMPLINGTHRESHOLD:
-        mesh = resampling(mesh)
-    if not is_watertight(mesh):
-        mesh = hole_stitching(mesh)
-    if not is_watertight(mesh):     #especially for "data/LabeledDB_new/Bearing/349.off"
-        mesh["faces"] = mesh["faces"].tolist()
-        mesh = resampling(mesh)
-        mesh = hole_stitching(mesh)
-    mesh = translate_mesh_to_origin(mesh)
-    mesh = align_shape(mesh)
-    mesh = flipping_test(mesh)
+    # if mesh['numVerts'] < MINRESAMPLINGTHRESHOLD or mesh['numVerts'] > MAXRESAMPLINGTHRESHOLD:
+    #     mesh = resampling(mesh)
+    # if not is_watertight(mesh):
+    #     mesh = hole_stitching(mesh)
+    # if not is_watertight(mesh):     #especially for "data/LabeledDB_new/Bearing/349.off"
+    #     mesh["faces"] = mesh["faces"].tolist()
+    #     mesh = resampling(mesh)
+    #     mesh = hole_stitching(mesh)
+    # mesh = translate_mesh_to_origin(mesh)
+    # mesh = align_shape(mesh)
+    # mesh = flipping_test(mesh)
     mesh = scale_mesh_to_unit(mesh)
     return mesh
 

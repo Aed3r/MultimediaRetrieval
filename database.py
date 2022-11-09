@@ -150,11 +150,11 @@ class DatabaseManager:
     def get_x_with_extracted_features(self, x):
         return self._db.meshes.find({'D4': {'$exists': True}}).limit(x)
 
-    def query(self, query, limit=None):
+    def query(self, query, filter={}, limit=None):
         if limit is None:
-            return self._db.meshes.find(query)
+            return self._db.meshes.find(query, filter)
         else:
-            return self._db.meshes.find(query).limit(limit)
+            return self._db.meshes.find(query, filter).limit(limit)
 
     # Returns a cursor to find all paths and names of the meshes
     def get_all_paths(self):

@@ -6,6 +6,7 @@ import normalization
 import os
 from tqdm import tqdm
 import load_meshes as lm
+import collections.abc
 
 THUMBNAILPATH = os.path.join("data", "normalized")
 THUMBNAILSCALE = 1
@@ -324,7 +325,7 @@ def gen_thumbnails(meshes, outputDir=None):
     
     sunDir = [0.577, -0.577, -0.577]
     renderer.scene.set_lighting(renderer.scene.MED_SHADOWS, sunDir)
-    renderer.scene.show_axes(False)
+    renderer.scene.show_axes(True)
     renderer.scene.show_skybox(False)
     bgColor = [1.0000, 1.0000, 0.9294, 1.0000]
     renderer.scene.set_background(bgColor)
@@ -343,13 +344,17 @@ def gen_thumbnails(meshes, outputDir=None):
     plasticMat.base_anisotropy = 0.0
     plasticMat.shader = "defaultLit"
 
-    geometry = o3d.geometry.TriangleMesh()
     outputPaths = []
 
-    for mesh in tqdm(meshes, desc="Generating thumbnails", ncols=150):
+    if isinstance(meshes, collections.abc.Sequence):
+        tot = len(meshes)
+    else:
+        tot = len(list(meshes.clone())) # Cursor
+    for mesh in tqdm(meshes, desc="Generating thumbnails", ncols=150, total=tot):
         if not "vertices" in mesh:
             mesh = lm.load_mesh(mesh["path"], returnInfoOnly=False)
         
+        geometry = o3d.geometry.TriangleMesh()
         geometry.vertices = o3d.utility.Vector3dVector(mesh["vertices"])
         geometry.triangles = o3d.utility.Vector3iVector(mesh["faces"])
         geometry.compute_triangle_normals()
@@ -358,8 +363,9 @@ def gen_thumbnails(meshes, outputDir=None):
         renderer.scene.add_geometry("Mesh", geometry, plasticMat)
 
         # Camera
-        bounds = renderer.scene.bounding_box
-        center = bounds.get_center()
+        #bounds = renderer.scene.bounding_box
+        #center = bounds.get_center()
+        center = np.asarray([0, 0, 0])
         renderer.setup_camera(60, center, center + [0, 0, 2], [0, 1, 0])
 
         img = renderer.render_to_image()

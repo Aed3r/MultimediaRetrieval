@@ -86,6 +86,7 @@ def gen_thumbnails():
     start = time.time()
     
     meshes = dbmngr.get_all()
+    #meshes = dbmngr.query({"class": "Airplane"})
     if not meshes.alive:
         print("No meshes found in the db. Run 'python main.py gendb' first.")
         return

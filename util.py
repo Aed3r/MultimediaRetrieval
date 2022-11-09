@@ -67,6 +67,12 @@ def compute_PCA (mesh):
     # https://docs.scipy.org/doc/numpy/reference/generated/numpy.linalg.eig.html 
     eigenvalues, eigenvectors = np.linalg.eig(A_cov)
 
+    all = [(eigenvalues[i], eigenvectors[:, i]) for i in range(len(eigenvalues))]
+    all.sort(key=lambda x: x[0], reverse=True)
+    
+    eigenvectors = [all[i][1] for i in range(3)]
+    eigenvalues = [all[i][0] for i in range(3)]
+    
     return eigenvalues, eigenvectors
 
 # Extract the faces from a polydata mesh and return them as an array

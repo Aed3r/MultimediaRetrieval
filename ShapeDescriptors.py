@@ -14,9 +14,9 @@ FEATUREPLOTSPATH = "data/featurePlots/"
 
 # Calculate the distance between barycenter and origin
 def get_barycenter_origin_distance(mesh):
-    barycenter = get_shape_barycenter(mesh)
+    barycenter = util.get_shape_barycenter(mesh)
     origin = np.asarray([0, 0, 0])
-    barycenter_origin_distance = distance_between(barycenter, origin)
+    barycenter_origin_distance = util.distance_between(barycenter, origin)
 
     return barycenter_origin_distance
 
@@ -24,8 +24,8 @@ def get_barycenter_origin_distance(mesh):
 # Calculate the absolute cosine similarity between 2 vectors
 def get_Cosine_similarity(mesh):
 
-    eigenvalues, eigenvectors = compute_PCA(mesh)
-    largest_eigenvector = eigenvectors[:, np.argmax(eigenvalues)]
+    eigenvalues, eigenvectors = util.compute_PCA(mesh)
+    largest_eigenvector = eigenvectors[np.argmax(eigenvalues)]
     vec1 = largest_eigenvector
     # v2: x-axis
     vec2 = [1, 0, 0]
@@ -362,25 +362,25 @@ if __name__ == '__main__':
     
     for i in range(len(data)):
         # barycenter_origin_distance.append(util.get_barycenter_origin_distance(data[i]))
-        absolute_cosine_similarity.append(util.get_Cosine_similarity(data[i]))
-        longest_AABB_edge.append(util.get_longest_AABB_edge(data[i]))
+        #absolute_cosine_similarity.append(get_Cosine_similarity(data[i]))
+        longest_AABB_edge.append(get_longest_AABB_edge(data[i]))
         
 
-    for i in range(len(data)):
-        print("The %dth origin data feature: " %(i+1))
-        print("barycenter_origin_distance: %.5f" %barycenter_origin_distance[i])
-        print("absolute_cosine_similarity: %.5f" %absolute_cosine_similarity[i])
-        print("AABB_edge_0: %.5f" %longest_AABB_edge[i])
+    #for i in range(len(data)):
+        #print("The %dth origin data feature: " %(i+1))
+        #print("barycenter_origin_distance: %.5f" %barycenter_origin_distance[i])
+        #print("absolute_cosine_similarity: %.5f" %absolute_cosine_similarity[i])
+        #print("AABB_edge_0: %.5f" %longest_AABB_edge[i])
 
 
     
     # store in sheet and histogram
     # statistics.draw_histogram(barycenter_origin_distance, 'barycenter distance')
     # statistics.save_Excel(barycenter_origin_distance, 'baryCenter_origin_distance_I')
-    # statistics.draw_histogram(absolute_cosine_similarity, 'cosine similarity')
-    # statistics.save_Excel(absolute_cosine_similarity, 'absolute_cosine_similarity_I')
+    #statistics.draw_histogram(absolute_cosine_similarity, 'cosine similarity')
+    #statistics.save_Excel(absolute_cosine_similarity, 'absolute_cosine_similarity_I')
     statistics.draw_histogram(longest_AABB_edge, 'AABB')
-    statistics.save_Excel(longest_AABB_edge, 'longest_AABB_edge_I')
+    #statistics.save_Excel(longest_AABB_edge, 'longest_AABB_edge_I')
 
     barycenter_origin_distance_Normalized = []
     absolute_cosine_similarity_Normalized = []
@@ -388,9 +388,9 @@ if __name__ == '__main__':
 
 
     for i in range(len(normalized_data)):
-        # barycenter_origin_distance_Normalized.append(util.get_barycenter_origin_distance(normalized_data[i]))
-        # absolute_cosine_similarity_Normalized.append(util.get_Cosine_similarity(normalized_data[i]))
-        longest_AABB_edge_Normalized.append(util.get_longest_AABB_edge(normalized_data[i]))
+        #barycenter_origin_distance_Normalized.append(get_barycenter_origin_distance(normalized_data[i]))
+        #absolute_cosine_similarity_Normalized.append(get_Cosine_similarity(normalized_data[i]))
+        longest_AABB_edge_Normalized.append(get_longest_AABB_edge(normalized_data[i]))
         
 
     # for i in range(len(data)):
@@ -400,10 +400,10 @@ if __name__ == '__main__':
         # print("longest_AABB_edge_normalized: %.5f" %longest_AABB_edge_Normalized[i])
     # statistics.draw_histogram(barycenter_origin_distance_Normalized, 'barycenter distance')
     # statistics.save_Excel(barycenter_origin_distance_Normalized, 'baryCenter_origin_distance_N')
-    # statistics.draw_histogram(absolute_cosine_similarity_Normalized, 'cosine similarity')
-    # statistics.save_Excel(absolute_cosine_similarity_Normalized, 'absolute_cosine_similarity_N')
+    #statistics.draw_histogram(absolute_cosine_similarity_Normalized, 'cosine similarity')
+    #statistics.save_Excel(absolute_cosine_similarity_Normalized, 'absolute_cosine_similarity_N')
     statistics.draw_histogram(longest_AABB_edge_Normalized, 'AABB')
-    statistics.save_Excel(longest_AABB_edge_Normalized, 'longest_AABB_edge_N')
+    #statistics.save_Excel(longest_AABB_edge_Normalized, 'longest_AABB_edge_N')
 
 
     # # get normalized mesh

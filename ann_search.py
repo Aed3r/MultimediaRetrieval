@@ -4,6 +4,7 @@ import util
 from tqdm import tqdm
 from annoy import AnnoyIndex
 import numpy as np
+import collections.abc
 
 DEFAULTANNEXPORT = os.path.join("data", "annoy_index.ann")
 SCALARWEIGHT = 0.25
@@ -20,7 +21,10 @@ def create_ann(meshes, exportPath=DEFAULTANNEXPORT):
     t = AnnoyIndex(FEATUREVECTORLENGTH, metric=ANNMETRIC) # Metric can be "angular", "euclidean", "manhattan", "hamming", or "dot"
 
     # Add the meshes to the index
-    tot = len(list(meshes.clone()))
+    if isinstance(meshes, collections.abc.Sequence):
+        tot = len(meshes)
+    else:
+        tot = len(list(meshes.clone())) # Cursor
     for i, mesh in enumerate(tqdm(meshes, desc="Adding meshes to index", ncols=150, total=tot)):
         v = util.get_feature_vector_from_mesh(mesh, WEIGHTS)
         t.add_item(i, vector=v)
