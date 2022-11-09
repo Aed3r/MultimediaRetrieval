@@ -103,6 +103,15 @@ def get_rnn(queryMesh, r, importPath=DEFAULTANNEXPORT):
 
     return filtered
 
+def ann_res_to_meshes(annRes, dbmngr):
+    res = []
+    for i, x in enumerate(annRes[0]):
+        res.append(dbmngr.get_all_with_extracted_features()[x])
+        res[i]["distance"] = annRes[1][i]
+
+    return res
+
+
 if __name__ == "__main__":
     import database
 
@@ -116,7 +125,7 @@ if __name__ == "__main__":
     # Get the k nearest neighbors
     nn = get_knn(queryMesh=query, k=10)
 
-    for i, x in enumerate(nn[0]):
+    for i, x in enumerate(annRes[0]):
         mesh = dbmngr.get_all_with_extracted_features()[x]
         print("#" + str(i) + ": " + mesh["path"] + " - " + mesh["class"] + "(dist=" + str(nn[1][i]) + ")")
 

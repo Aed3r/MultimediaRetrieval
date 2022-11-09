@@ -259,7 +259,7 @@ def run_quality_metrics():
         print("No meshes with extracted features found in the db. Run 'python main.py extract' first.")
         return
 
-    roc(meshes)
+    #roc(meshes)
 
     dblabel = []
     for mesh in meshes:
@@ -280,7 +280,7 @@ def run_quality_metrics():
     # proportion of returned dogs from all RETURNED items
     # high precision(ppv): I get mostly dogs in my query result
     # low precision(ppv): I get many cats in my query result
-    # ppv(DBlabel)
+    ppv(DBlabel)
 
     # proportion of returned dogs from all DOGS in database
     # high recall: I get most of dogs in database

@@ -17,6 +17,7 @@ import ShapeDescriptors
 from tkinter.ttk import Progressbar
 import database
 import subprocess
+import ann_search as ann
 
 class App(tk.Tk):
     def __init__(self):
@@ -48,6 +49,12 @@ class App(tk.Tk):
             for mesh in meshes:
                 classOption.add_command(label=mesh["name"], command=lambda mesh=mesh: self.on_load_from_db(mesh))
 
+        optionsOption = Menu(menuBar, tearoff=False)
+        menuBar.add_cascade(label="Query Options", menu=optionsOption)
+        self.useANN = tk.BooleanVar()
+        self.useANN.set(False)
+        optionsOption.add_checkbutton(label="Use ANN", variable=self.useANN)
+
         menuBar.add_command(label="Analyze", command=self.on_analyze_click)
         menuBar.add_command(label="Exit", command=self.destroy)
 
@@ -62,9 +69,17 @@ class App(tk.Tk):
         self.top_layout = ttk.Frame(vert_layout)
         self.top_layout.pack(fill=BOTH, expand=True)
 
+        # Create a slider
+        self.slider = ttk.Scale(self.top_layout, from_=0, to=20, orient=HORIZONTAL, command=self.on_slider_change)
+        self.k = 5
+        self.slider.set(self.k)
+
     def on_load_from_db(self, mesh):
         self.mesh = self.dbmngr.query({'_id': mesh["_id"]})[0]
         self.show_query_mesh()
+
+    def on_slider_change(self, value):
+        self.k = int(float(value))
 
     def on_load_mesh(self):
         # Open a file dialog
@@ -163,7 +178,16 @@ class App(tk.Tk):
         subprocess.call("python visualizer.py " + meshPath, shell=False)
 
     def on_analyze_click(self):
-        res = df.find_best_matches(self.mesh, 5)
+        if self.useANN.get():
+            print("Query using ANN...")
+            res = ann.get_knn(self.mesh, self.k)
+            res = ann.ann_res_to_meshes(res, self.dbmngr)
+        else:
+            print("Query using simple search...")
+            res = df.find_best_matches(self.mesh, self.k)
+
+        if hasattr(self, "horiz_layout_res"):
+            self.horiz_layout_res.pack_forget()
 
         # Create a horizontal layout
         self.horiz_layout_res = ttk.Frame(self)
@@ -187,7 +211,10 @@ class App(tk.Tk):
             label.pack()
 
             # Distance label
-            distance = round((1 - resMesh["distance"][0]) * 100, 2)
+            if self.useANN.get():
+                distance = round((1 - resMesh["distance"]) * 100, 2)
+            else:
+                distance = round((1 - resMesh["distance"][0]) * 100, 2)
             distLabel = ttk.Label(vert_layout, text=str(distance) + "%")
             distLabel.pack()
 
