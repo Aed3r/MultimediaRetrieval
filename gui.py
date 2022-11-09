@@ -193,7 +193,7 @@ class App(tk.Tk):
 
             panel = Label(vert_layout, image=img)
             panel.image = img
-            panel.bind('<Double-Button-1>', lambda event, meshPath=self.resMesh["path"]: self.on_visualize_mesh(meshPath))
+            panel.bind('<Double-Button-1>', lambda event, meshPath=resMesh["path"]: self.on_visualize_mesh(meshPath))
             panel.pack()
 
     def run(self):
