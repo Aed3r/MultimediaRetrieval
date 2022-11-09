@@ -125,17 +125,17 @@ def hole_filling(mesh):
 
 # Applies all the normalization steps to the given mesh
 def normalize(mesh):
-    # if mesh['numVerts'] < MINRESAMPLINGTHRESHOLD or mesh['numVerts'] > MAXRESAMPLINGTHRESHOLD:
-    #     mesh = resampling(mesh)
-    # if not is_watertight(mesh):
-    #     mesh = hole_stitching(mesh)
-    # if not is_watertight(mesh):     #especially for "data/LabeledDB_new/Bearing/349.off"
-    #     mesh["faces"] = mesh["faces"].tolist()
-    #     mesh = resampling(mesh)
-    #     mesh = hole_stitching(mesh)
-    # mesh = translate_mesh_to_origin(mesh)
-    # mesh = align_shape(mesh)
-    # mesh = flipping_test(mesh)
+    if mesh['numVerts'] < MINRESAMPLINGTHRESHOLD or mesh['numVerts'] > MAXRESAMPLINGTHRESHOLD:
+        mesh = resampling(mesh)
+    if not is_watertight(mesh):
+        mesh = hole_stitching(mesh)
+    if not is_watertight(mesh):     #especially for "data/LabeledDB_new/Bearing/349.off"
+        mesh["faces"] = mesh["faces"].tolist()
+        mesh = resampling(mesh)
+        mesh = hole_stitching(mesh)
+    mesh = translate_mesh_to_origin(mesh)
+    mesh = align_shape(mesh)
+    mesh = flipping_test(mesh)
     mesh = scale_mesh_to_unit(mesh)
     return mesh
 
