@@ -140,7 +140,7 @@ def import_db():
     
     dbmngr.import_db(import_path)
 
-def create_ann():
+def create_ann(numTrees=None):
     global dbmngr
 
     print("Creating ANN index...")
@@ -151,7 +151,10 @@ def create_ann():
         print("No meshes with extracted features found in the db. Run 'python main.py extract' first.")
         return
 
-    ann.create_ann(meshes)
+    if numTrees is None:
+        ann.create_ann(meshes)
+    else:
+        ann.create_ann(meshes, numTrees)
 
     print(f"ANN index created successfully. ({round(time.time() - start)}s)")
 
@@ -175,6 +178,23 @@ def run_quality_metrics():
     quality_metrics.run_quality_metrics()
 
     print(f"Quality metrics run successfully. ({round(time.time() - start)}s)")
+
+def full_extract():
+    #save_normalize_meshes(fromLPSB=True)
+    extract_features()
+    standardize_db()
+
+    try:
+        gen_truth_table("simple")
+        dbmngr.export_db(os.path.join("DB_dumps", "simple.db"))
+    except:
+        print("Error generating truth table for simple method.")
+
+    for num in [10, 50, 100, 200, 300, 400, 500]:
+        create_ann(num)
+        gen_truth_table("ann")
+        dbmngr.export_db(os.path.join("DB_dumps", f"ann_{num}.db"))
+    
 
 def main():
     global dbmngr
@@ -232,6 +252,8 @@ def main():
             gen_truth_table("ann")
         elif sys.argv[1].lower() == "qualmetrics":
             run_quality_metrics()
+        elif sys.argv[1].lower() == "fullextract":
+            full_extract()
         elif sys.argv[1].lower() == "help":
             print("Available commands:")
             print("gen/genLPSB: Normalizes and generates the database using all the meshes in the Labeled PSB dataset. Extracts features and generates thumbnails")
@@ -253,6 +275,7 @@ def main():
             print("genTruthTableSimple: Generates the truth tables for the simple CBSR")
             print("genTruthTableANN: Generates the truth tables for the ANN CBSR")
             print("qualMetrics: Runs the quality metrics for the currently generated truth tables")
+            print("fullExtract: Generates full database dumps containing truth tables for both the simple and the ANN CBSR")
             print("help: Prints this help message")
         else:
             print("Invalid argument. Use 'python main.py help' to see the available commands.")

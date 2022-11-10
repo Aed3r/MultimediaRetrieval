@@ -16,7 +16,7 @@ NUMTREES = 500
 ANNMETRIC = "angular"
 
 # Creates the Annoy index from the given meshes
-def create_ann(meshes, exportPath=DEFAULTANNEXPORT):
+def create_ann(meshes, exportPath=DEFAULTANNEXPORT, numTrees=NUMTREES):
     # Create the Annoy index
     t = AnnoyIndex(FEATUREVECTORLENGTH, metric=ANNMETRIC) # Metric can be "angular", "euclidean", "manhattan", "hamming", or "dot"
 
@@ -32,7 +32,7 @@ def create_ann(meshes, exportPath=DEFAULTANNEXPORT):
     # Build the index
     print("Building index...")
     start = time.time()
-    t.build(NUMTREES)
+    t.build(numTrees)
     print(f"Index built successfully. ({round(time.time() - start)}s)")
 
     # Check if the export path exists

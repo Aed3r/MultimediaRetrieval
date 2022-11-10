@@ -103,7 +103,7 @@ class DatabaseManager:
     # The data must be a dictionary and contain the path field
     def update_one(self, data):
         for key in data:
-            if key != 'path':
+            if key != 'path' and key != 'vertices' and key != 'faces':
                 self._db.meshes.update_one({'path': data['path']}, {'$set': {key: data[key]}})
 
     # Update the meshes with the given data
@@ -186,10 +186,15 @@ class DatabaseManager:
         self.insert_data(data)
         print("Database imported successfully. (Took {:.2f} seconds)".format(time.time() - start))
 
+    def unset_fields(self):
+        self._db.meshes.update({}, {"$unset": {"vertices": 1}} , {"multi": True})
+
 def main():
     import load_meshes
 
     dbmngr = DatabaseManager()
+
+    dbmngr.unset_fields()
 
     # Load the data
     #data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, fromNORM=False, randomSample=-1, returnInfoOnly=True)
@@ -198,12 +203,12 @@ def main():
     #dbmngr.insert_data(data)
 
     # Print the number of meshes loaded in the db
-    print(f'{dbmngr.get_mesh_count()} meshes loaded in the db')
+    #print(f'{dbmngr.get_mesh_count()} meshes loaded in the db')
 
     # Print the number of meshes with the given shape class
-    print(f'{dbmngr.get_mesh_count_by_category("Airplane")} meshes with shape class \'Airplane\' loaded in the db')
+    #print(f'{dbmngr.get_mesh_count_by_category("Airplane")} meshes with shape class \'Airplane\' loaded in the db')
 
-    paths = dbmngr.get_all_paths()
+    #paths = dbmngr.get_all_paths()
     print("All done")
 
 

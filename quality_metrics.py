@@ -88,7 +88,7 @@ def acc(DBlabel):
     print("average ACC of each class:", ACCavg)
     print("average ACC of the database:", ACCdbavg)
 
-    return 0
+    return (ACCdbavg, ACCavg)
 
 def ppv(DBlabel):
     # PPV = TP / (TP + FP)
@@ -127,7 +127,7 @@ def ppv(DBlabel):
     # print("PPVsum", PPVsum)
     print("average PPV of each class:", PPVavg)
     print("average PPV of the database:", PPVdbavg)
-    return 0
+    return (PPVdbavg, PPVavg)
 
 def recall(DBlabel):
     # TPR = TP / (TP+FN)
@@ -162,7 +162,7 @@ def recall(DBlabel):
     # print("RECALLsum", RECALLsum)
     print("average RECALL of each class:", RECALLavg)
     print("average RECALL of the database:", RECALLdbavg)
-    return 0
+    return (RECALLdbavg, RECALLavg)
 
 def specificity(DBlabel):
     # Specificity =  TN / (FP + TN)
@@ -200,7 +200,7 @@ def specificity(DBlabel):
     # print("SPECsum", SPECsum)
     print("average Specificity of each class:", SPECavg)
     print("average Specificity of the database:", SPECdbavg)
-    return 0
+    return (SPECdbavg, SPECavg)
 
 
 def roc(meshes):
@@ -253,7 +253,8 @@ def roc(meshes):
 
 
 def run_quality_metrics():
-    meshes = dbmngr.get_all_with_extracted_features()
+    #meshes = dbmngr.get_all_with_extracted_features()
+    meshes = dbmngr.query({'D4': {'$exists': True}}, {}, 170)
 
     if not meshes.alive:
         print("No meshes with extracted features found in the db. Run 'python main.py extract' first.")
@@ -274,7 +275,7 @@ def run_quality_metrics():
         DBlabel.append(''.join(label))
 
     # Correct percentage of total data:
-    # acc(DBlabel)
+    acc(DBlabel)
 
     # this one might be good to show
     # proportion of returned dogs from all RETURNED items
@@ -286,11 +287,14 @@ def run_quality_metrics():
     # high recall: I get most of dogs in database
     # low recall: There are many dogs in database I don’t find
     # also called sensitivity : proportion of all dogs that are returned by a query for dogs
-    # recall(DBlabel)
+    recall(DBlabel)
 
     # this one has error
     # proportion of all cats that are not returned by a query for dogs
-    # specificity(DBlabel)
+    try:
+        specificity(DBlabel)
+    except:
+        print("specificity error")
 
 
 if __name__ == "__main__":
