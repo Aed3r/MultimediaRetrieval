@@ -246,9 +246,9 @@ def main():
             import_db()
         elif sys.argv[1].lower() == "createann":
             create_ann()
-        elif sys.argv[1].lower() == "gentruthtablesimple":
+        elif sys.argv[1].lower() == "genttsimple":
             gen_truth_table("simple")
-        elif sys.argv[1].lower() == "gentruthtableann":
+        elif sys.argv[1].lower() == "genttann":
             gen_truth_table("ann")
         elif sys.argv[1].lower() == "qualmetrics":
             run_quality_metrics()
@@ -272,8 +272,8 @@ def main():
             print("exportDB: Exports the database to a JSON file. If no path is specified, the default path is 'data/cache/db.json'")
             print("importDB: Imports the database from a JSON file. If no path is specified, the default path is 'data/cache/db.json'")
             print("createANN: Creates the ANN index")
-            print("genTruthTableSimple: Generates the truth tables for the simple CBSR")
-            print("genTruthTableANN: Generates the truth tables for the ANN CBSR")
+            print("genTTSimple: Generates the truth tables for the simple CBSR")
+            print("genTTANN: Generates the truth tables for the ANN CBSR")
             print("qualMetrics: Runs the quality metrics for the currently generated truth tables")
             print("fullExtract: Generates full database dumps containing truth tables for both the simple and the ANN CBSR")
             print("help: Prints this help message")

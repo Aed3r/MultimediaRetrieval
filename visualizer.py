@@ -325,7 +325,7 @@ def gen_thumbnails(meshes, outputDir=None):
     
     sunDir = [0.577, -0.577, -0.577]
     renderer.scene.set_lighting(renderer.scene.MED_SHADOWS, sunDir)
-    renderer.scene.show_axes(True)
+    renderer.scene.show_axes(False)
     renderer.scene.show_skybox(False)
     bgColor = [1.0000, 1.0000, 0.9294, 1.0000]
     renderer.scene.set_background(bgColor)

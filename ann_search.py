@@ -12,7 +12,7 @@ VECTORWEIGHT = 0.75
 #WEIGHTS = [SCALARWEIGHT/6 for x in range(6)] + [VECTORWEIGHT/50 for x in range(50)]
 WEIGHTS = [0.04284498, 0.03419309, 0.0450837 , 0.04429373, 0.02135738, 0.04512191] + [0.15362412 for x in range(10)] + [0.15341157 for x in range(10)] + [0.15363206 for x in range(10)] + [0.15307127 for x in range(10)] + [0.15336618 for x in range(10)]
 FEATUREVECTORLENGTH = 56
-NUMTREES = 500
+NUMTREES = 100
 ANNMETRIC = "angular"
 
 # Creates the Annoy index from the given meshes
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     # Get the k nearest neighbors
     nn = get_knn(queryMesh=query, k=10)
 
-    for i, x in enumerate(annRes[0]):
+    for i, x in enumerate(nn[0]):
         mesh = dbmngr.get_all_with_extracted_features()[x]
         print("#" + str(i) + ": " + mesh["path"] + " - " + mesh["class"] + "(dist=" + str(nn[1][i]) + ")")
 

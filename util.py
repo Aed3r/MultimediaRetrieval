@@ -208,7 +208,7 @@ def get_Cosine_Distance(vector_1, vector_2):
     Cosine_distance = (float(np.dot(vector_1, vector_2)) / (np.linalg.norm(vector_1) * np.linalg.norm(vector_2)))
 
     Cosine_distance = abs(1 - Cosine_distance)
-    return Cosine_distance
+    return np.cos(Cosine_distance)
 
 
 def get_Earth_Mover_Distance(vector_1, vector_2):
