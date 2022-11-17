@@ -15,7 +15,7 @@
    - The Labeled PSB dataset (https://people.cs.umass.edu/~kalo/papers/LabelMeshes/labeledDb.7z) to ./data/LabeledDB_new such that ./data/LabeledDB_new/Airplane exists
    
 ## Import Database
- - 
+ - The database can be downloaded here (https://drive.google.com/drive/folders/1pH79l-7HWPmV4fVzRe2rTZ4R7bE_aJN4?usp=sharing)
 
 ## Modules
  - Run `python load_meshes.py` to load a sample file and visualize it. Run `python load_meshes.py <path>` to visualize the OFF/PLY file located at `<path>` 
