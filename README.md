@@ -12,9 +12,17 @@
 
 ## Datasets
  - The datasets should be unzipped into the data directory:
-   - The Princeton shape benchmark (https://web.archive.org/web/20190323023058/http://shape.cs.princeton.edu/benchmark/download/psb_v1.zip) to ./data/psb_v1 such that ./data/psb_v1/benchmark exists
    - The Labeled PSB dataset (https://people.cs.umass.edu/~kalo/papers/LabelMeshes/labeledDb.7z) to ./data/LabeledDB_new such that ./data/LabeledDB_new/Airplane exists
+   
+## Import Database
+ - 
 
 ## Modules
  - Run `python load_meshes.py` to load a sample file and visualize it. Run `python load_meshes.py <path>` to visualize the OFF/PLY file located at `<path>` 
    - Command Example: `python load_meshes.py data/LabeledDB_new/Airplane/61.off`
+   
+## GUI
+ - Run `python gui.py` to use the graphic user interface, you can load a mesh from files or from database.
+
+## Run metrics
+ - 
