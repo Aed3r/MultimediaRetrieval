@@ -8,21 +8,18 @@
  - Install all python modules: open a new terminal at the project root and run `pip3 install -r requirements.txt`
     - You might also need to install 'windows-curses' if your operating system is Windows: `pip3 install windows-curses`
  - Run `python3.9 open3d_test.py` to check that open3d works
- - Build the basic database with `python3.9 database.py` to check that mongodb and pymongo work
+ - Build the basic database with `python3.9 main.py importDB data/db.json` to check that mongodb and pymongo work
 
 ## Datasets
  - The datasets should be unzipped into the data directory:
    - The Labeled PSB dataset (https://people.cs.umass.edu/~kalo/papers/LabelMeshes/labeledDb.7z) to ./data/LabeledDB_new such that ./data/LabeledDB_new/Airplane exists
+   - (optionally) The Princeton shape benchmark (https://web.archive.org/web/20190323023058/http://shape.cs.princeton.edu/benchmark/download/psb_v1.zip) to ./data/psb_v1 such that ./data/psb_v1/benchmark exists
    
-## Import Database
- - The database can be downloaded here (https://drive.google.com/drive/folders/1pH79l-7HWPmV4fVzRe2rTZ4R7bE_aJN4?usp=sharing)
-
-## Modules
- - Run `python load_meshes.py` to load a sample file and visualize it. Run `python load_meshes.py <path>` to visualize the OFF/PLY file located at `<path>` 
-   - Command Example: `python load_meshes.py data/LabeledDB_new/Airplane/61.off`
-   
-## GUI
+## Operations
+ - The main.py module controls most other modules. Run `python main.py help` to see all available commands. The most important ones are:
+   - `python main.py gen`: Normalizes and generates the database using all the meshes in the Labeled PSB dataset. Extracts features, generates thumbnails and creates the ANN index. This takes a while, importing an existing database with `python3.9 main.py importDB data/db.json` is recommended.
+   - `python main.py genTTSimple`: Generates the truth tables for the simple CBSR.
+   - `python main.py genTTANN`: Generates the truth tables for the ANN CBSR.
+   - `python main.py qualMetrics`: Runs the quality metrics for the currently generated truth tables.
+ - Run `python visualizer.py [<path>]` to open the visualizer with the mesh located at `<path>`. Without indicating a path, a random mesh is loaded.
  - Run `python gui.py` to use the graphic user interface, you can load a mesh from files or from database.
-
-## Run metrics
- - 

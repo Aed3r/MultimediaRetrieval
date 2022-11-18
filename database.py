@@ -194,8 +194,6 @@ def main():
 
     dbmngr = DatabaseManager()
 
-    dbmngr.unset_fields()
-
     # Load the data
     #data = load_meshes.get_meshes(fromLPSB=True, fromPRIN=False, fromNORM=False, randomSample=-1, returnInfoOnly=True)
 

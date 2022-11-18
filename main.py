@@ -256,7 +256,7 @@ def main():
             full_extract()
         elif sys.argv[1].lower() == "help":
             print("Available commands:")
-            print("gen/genLPSB: Normalizes and generates the database using all the meshes in the Labeled PSB dataset. Extracts features and generates thumbnails")
+            print("gen/genLPSB: Normalizes and generates the database using all the meshes in the Labeled PSB dataset. Extracts features, generates thumbnails and creates the ANN index.")
             print("genPrin: Normalizes and generates the database using all the meshes in the Princeton dataset. Extracts features and generates thumbnails")
             print("genDB: Generates the database using the normalized meshes")
             print("normLPSB: Loads and normalizes all meshes from the Labeled PSB dataset and saves them to the 'data/normalized' folder")
@@ -275,7 +275,6 @@ def main():
             print("genTTSimple: Generates the truth tables for the simple CBSR")
             print("genTTANN: Generates the truth tables for the ANN CBSR")
             print("qualMetrics: Runs the quality metrics for the currently generated truth tables")
-            print("fullExtract: Generates full database dumps containing truth tables for both the simple and the ANN CBSR")
             print("help: Prints this help message")
         else:
             print("Invalid argument. Use 'python main.py help' to see the available commands.")
