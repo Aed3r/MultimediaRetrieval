@@ -19,7 +19,7 @@ VECTORWEIGHT = 0.8/5
 # VECTORWEIGHT = [0.05, 0.05, 0.25, 0.25, 0.15]
 #SCALARWEIGHTS = [0.07, 0.28, 0.01, 0.03, 0.59, 0.01]
 
-
+# Not used anymore
 def matching_single_Feature(mesh, distance_type):
     # get features from the input (querying) mesh
     mesh = normalization.normalize(mesh)
@@ -96,6 +96,7 @@ def matching_single_Feature(mesh, distance_type):
     return dists
 
 
+# Not used anymore
 def matching_histo_Feature(mesh, distance_type, descriptor):
     # get features from the input (querying) mesh
     mesh = normalization.normalize(mesh)
