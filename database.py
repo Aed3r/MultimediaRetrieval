@@ -168,7 +168,7 @@ class DatabaseManager:
     def export_db(self, path):
         print("Exporting database to {}...".format(path))
         start = time.time()
-        meshes = self._db.meshes.find({}, {'_id': False})
+        meshes = self._db.meshes.find({}, {'_id': False, 'vertices': False, 'faces': False})
         with open(path, 'w') as f:
             f.write('[')
             for mesh in tqdm(meshes, desc="Exporting database", ncols=150, total=self.get_mesh_count()):

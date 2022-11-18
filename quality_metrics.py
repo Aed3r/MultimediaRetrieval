@@ -1,3 +1,4 @@
+import time
 import numpy as np
 from scipy.optimize import curve_fit
 from tqdm import tqdm
@@ -11,6 +12,8 @@ database_length = 380
 
 def getTruthTable(type="simple"):
     meshes = dbmngr.get_all_with_extracted_features()
+    avg_speed = -1
+    count = 0
 
     if not meshes.alive:
         raise Exception("No meshes with extracted features found in the db. Run 'python main.py extract' first.")
@@ -18,6 +21,7 @@ def getTruthTable(type="simple"):
     # mesh = dbmngr.get_by_path("data\\normalized\\Airplane\\61.off")
     for mesh in tqdm(meshes, desc='Computing TruthTable', ncols=130, total=dbmngr.get_mesh_count_with_features()):
         Qlabel = mesh['class']
+        start = time.time()
         if type == "simple":
             res = df.find_best_matches(mesh, k=5)
         elif type == "ann":
@@ -27,6 +31,13 @@ def getTruthTable(type="simple"):
                 mesh1 = dbmngr.get_all_with_extracted_features()[x]
                 mesh1 ["distance"] = nn[1][i]
                 res.append(mesh1)
+        
+        if avg_speed == -1:
+            avg_speed = time.time() - start
+        else:
+            avg_speed += time.time() - start
+        count += 1
+        print("Total average speed:", str(round(avg_speed / count, 2)), "s")
         
         TP = FP = 0
         # dbQsum: total number of positive shapes in db
@@ -49,8 +60,10 @@ def getTruthTable(type="simple"):
                 dbRsum += dbmngr.get_mesh_count_by_category(r['class'])
         TN = dbRsum - FP
         TruthTable = [TP, FP, FN, TN]
-        mesh["TruthTable"] = TruthTable
-        dbmngr.update_one(mesh)
+        res = {}
+        res["path"] = mesh["path"]
+        res["TruthTable"] = TruthTable
+        dbmngr.update_one(res)
     return 0
 
 def acc(DBlabel):
